@@ -1,0 +1,275 @@
+\documentclass{article}  % this line must be in main document!! otherwise compiler gets confused
+\input{preamble.tex}
+\addbibresource{bibliography.bib}
+
+\title{TFR Notes}
+\author{Veronika Chronholm}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\section{Theory}
+
+% - PDE Constrained optimisation problem 
+
+% - Forward + Backward PDEs
+
+% - Initial/terminal conditions, boundary conditions, and source terms (figure out equivalent formulations?)
+
+% \vspace{5mm}
+% - Forward + Backward SDEs
+
+% - Connections between FBSDEs and the PDEs (eg distribution of process given by forward SDE is described by sol to Fokker-Planck/Kolmogorov forward eqn)
+
+% - Feynman-Kac formulae (of various kinds)
+
+% - Solving Fokker-Planck using MC + Feynman-Kac (as in reading course)
+
+% - Simplest scheme for Forward-Backward SDEs
+
+% - New (\cite{fang2023strong}) SSP scheme for FBSDEs
+
+% - Specifically what schemes and equations look like for the reading course model
+
+% - Similarities/Differences between the "first" (linear?) kind of Feynman-Kac formula, and the FBSDE *nonlinear* Feynman-Kac formulae?
+
+% - CONSISTENT NOTATION --- there is something weird with functions $f$ and $g$ at the moment, for example\dots
+
+\subsection{Forward and Backward PDEs}
+
+Treatment planning problem (PDE constrained optimisation):
+%
+\begin{align} 
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+\end{align}
+%
+subject to a constraint
+%
+\begin{align} 
+    &\partial_t u + b \cdot \nabla u - \mu \Delta u = g\\
+    &{u \rvert}_{\partial \Omega} = 0
+\end{align}
+%
+Using the method of Lagrange multipliers, we can solve the above optimisation problem by solving simultaneously the two PDEs
+%
+\begin{align}
+    - \partial_t z - \mu \Delta z - b \cdot \nabla z &= u - d_T\\
+    \partial_t u - \mu \Delta u + b \cdot \nabla u &= \frac{1}{\alpha} z 
+\end{align}
+%
+
+\subsection{Forward SDE and linear Feynman-Kac formula}
+
+Let $b:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^d$, $\sigma:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^{d \times d}$, and $W_t$ a $d$-dimensional Brownian motion. Consider the $d$-dimensional SDE
+%
+\begin{align}
+    \label{eq:gen-sde}
+X_t = x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s
+\end{align}
+%
+for the process $X_t$. 
+
+The infinitesimal generator of $X_t$ is the differential operator 
+%
+\begin{align}
+    \label{eq:generator-operator}
+    \mathcal{L} = \frac{1}{2} \sum_{i,j=1}^d [\sigma \sigma^T]_{i,j}(t,x) \partial_{x_i,x_j}^2 + \sum_{i=1}^d b_i(t,x) \partial_{x_i}.
+\end{align}
+%
+This operator is defined by
+%
+\begin{align} 
+    \mathcal{L}f(x) = \lim_{t\rightarrow 0} \frac{\mathbb{E}_x[f(X_t)]-f(x)}{t}.
+\end{align}
+%
+
+Below, we describe the connection between a PDE involving this differential operator, and the solution to the SDE \autoref{eq:gen-sde}, yielding a probabilistic representation of the solution to the PDE. We consider the terminal value problem
+%
+\begin{align}
+    \label{eq:backward-pde}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) - k(t,x)u(t,x) + g(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x).
+    \end{cases}
+\end{align}
+%
+We note that the probabilistic convention is to formulate this problem as a terminal value problem, as we have done here. However, the PDE convention would be to instead formulate it as an initial value problem. These two formulations are equivalent under a time-reversal $t \mapsto T-t$. 
+
+Under some conditions (see for example \cite{gobet2016monte} for the specifics) on the functions $f, g, k$ as well as on $b$ and $\sigma$, and provided that the solution $u$ to \autoref{eq:backward-pde} exists and is in $\mathcal{C}^{1,2}$, and satisfies some further conditions of continuity and boundedness, $u(t,x)$ is given by the Feynman-Kac formula
+%
+\begin{align}
+    \label{eq:linear-fc} 
+    u(t,x) = \mathbb{E}\bigg[ f\big( X_T^{t,x} \big) e^{-\int_t^T k(r,X_r^{t,x})dr} + \int_t^T g(s,X_s^{t,x}) e^{-\int_t^s k(r,X_r^{t,x})dr}ds\bigg].
+\end{align} 
+%
+Here $X_T^{t,x}$ denotes the stochastic process $X$ at time $T$, started at $x$ at time $t$.
+
+We note that in particular, for $k=0,g=0$, the solution to the Kolmogorov backward equation (with terminal condition),
+%
+\begin{align}
+    \label{eq:kolmogorov-backward}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x),
+    \end{cases}
+\end{align}
+%
+is given by 
+%
+\begin{align}
+    u(t,x) = \mathbb{E}\big[ f(X_T^{t,x}) \big]. 
+\end{align} 
+% 
+Another PDE related to the SDE \autoref{eq:gen-sde} is the Kolmogorov forward equation
+%
+\begin{align} % sign?
+    \label{eq:kolmogorov-forward}
+    \partial_s p(s,y) - \mathcal{L}^{*}p(s,y) = 0,
+\end{align}
+%
+where the differential operator $\mathcal{L}^{*}$ is the adjoint of $\mathcal{L}$, given by
+%
+\begin{align}
+    \label{eq:adjoint-operator}
+     \mathcal{L}^{*} = \frac{1}{2} \sum_{i,j=1}^{d} \partial_{y_i,y_j} [\sigma \sigma^T]_{i,j}(s,y) - \sum_{i=1}^{d} \partial_{y_i}b_i(s,y).
+\end{align} 
+%
+% is the IC at time zero or time t? Probably zero...
+The Kolmogorov forward equation (with initial condition $p(0,y)=\delta(y-x)$) describes the probability distribution of the stochastic process $X_t$ that solves the SDE in \autoref{eq:gen-sde}. We can obtain a Feynman-Kac type formula for the density function $p(s,y)$ (assuming that $X_t$ admits a density), by noting that
+%
+\begin{align} 
+    \mathbb{E}[f(X_T^{t,x})] = \int p_{x,t}(T,z)f(z)dz 
+\end{align}
+%
+Hence,
+%
+\begin{align}
+    p(T,y) = \mathbb{E}[\delta({X_T^{t,x} - y})] = \int p_{t,x}(T,z)\delta({z-y})dz, 
+\end{align} 
+%
+or more generally
+%
+\begin{align}
+    p(s,y) = \mathbb{E}[\delta({X_s^{t,x} - y})] = \int p_{t,x}(s,z)\delta({z-y})dz.
+\end{align} 
+%
+There are some subtleties that have not been covered here --- e.g.\ what is required for $X_t$ to admit a density function, and the regularity required for the expectation of an indicator function to make sense. We also note that when writing $p(s,y)$, the probability density function of $X$ being at a point $y$ at time $s$, we are implicitly referring to the probability density conditioned on the initial distribution, i.e. in this case conditioned on $X$ starting at position $x$ at time $t$, for some $t<s$.
+
+\subsection{Forward Backward SDE and nonlinear Feynman-Kac formula}
+Now, we introduce the forward-backward SDE
+%
+\begin{align} 
+    \label{eq:fbsde}
+    \begin{cases}
+    X_t &= x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s\\
+    & \\
+    Y_t &= f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s[\sigma(s,X_s)]^{-1}\big)ds - \int_t^T Z_s dW_s,
+    \end{cases}
+\end{align}
+%
+where the first equation is the forward SDE --- identical to \autoref{eq:gen-sde} --- and the second equation is the backward SDE.\@ We note that $X_t$ depends on the values of $X$ prior to time $t$, whilst $Y_t$ depends on the values of $X,Y,Z$ after time $t$ (and up to time $T$). 
+
+It can be shown that the backward SDE above is related to the PDE (terminal value problem)
+%
+\begin{align}
+    \label{eq:nonlinear-pde}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) + g(t,x,u(t,x),\nabla u(t,x)) = 0 \\
+    &u(T,x) = f(x), 
+\end{align} 
+%
+where, as before, the operator $\mathcal{L}$ is the infinitesimal generator of the forward SDE. Specifically, if the solution to the terminal value problem exists, then the processes $Y_t$, $Z_t$ given by
+%
+\begin{align} 
+    Y_t &= u(t,X_t)\\
+    Z_t &= \sigma(t,X_t) \nabla u(t,X_t)
+\end{align}
+%
+satisfy the FBSDE of \autoref{eq:fbsde}. We also note that this statement can be extended to a system of $k$ PDEs, and a vector valued stochastic process $Y_t$. 
+
+Similarly to in \autoref{eq:linear-fc}, we can express the solution $u(t,x)$ to the terminal value problem \autoref{eq:nonlinear-pde} in terms of a (now nonlinear) Feynman-Kac formula as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc}
+    u(t,x) = \mathbb{E}\bigg[ f(X_T^{t,x}) + \int_t^T g\big(s,X_s^{t,x},u(s,X_s^{t,x}),\nabla u(s,X_s^{t,x})\big)ds \bigg].
+\end{align} 
+%
+Alternatively, we can write $Y_t$ as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc-for-y}
+    Y_t = u(t,X_t) = \mathbb{E}\bigg[ f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s\big)ds \Big\lvert X_t \bigg].
+\end{align}
+%
+
+Comparing \autoref{eq:nonlinear-fc} to \autoref{eq:linear-fc}, we note that the function $g$ now in general depends on not only $t$ and $X_t$, but can also depend on $u$ and $\nabla u$. The discount (or attenuation) factor $k(t,x)$ in \autoref{eq:backward-pde} has been absorbed into the more general source term $g(t,x,u(t,x),\nabla u(t,x))$ in \autoref{eq:nonlinear-pde}. We also note that in \autoref{eq:linear-fc}, only the left hand side depends on $u$, whilst in \autoref{eq:nonlinear-fc} the right hand side also depends on $u$. Hence, to use the latter for numerical simulation of $u(t,x)$, more careful consideration is required.
+
+We have now seen that the solution to the terminal value problem (backward PDE) of \autoref{eq:nonlinear-pde} is associated with the backward SDE in \autoref{eq:fbsde}. This is a generalisation of the connection discussed in the previous subsection, and we note that by letting $g$ depend on only $t$ and $x$, we can formulate a less general backward SDE and recover a version of the linear Feymnan-Kac formula of \autoref{eq:linear-fc}, glossing over some subtleties related to the discount factor $k(t,x)$.
+
+As before, the PDE directly associated with the forward SDE in \autoref{eq:fbsde} is the Kolmogorov forward equation of \autoref{eq:kolmogorov-forward} with initial condition $p(0,y)=\delta(y-x)$. It is not clear whether a Feynman-Kac formula can be obtained for a more general PDE featuring the operator $\mathcal{L}^*$ defined in \autoref{eq:adjoint-operator} rather than the operator $\mathcal{L}$ of \autoref{eq:generator-operator}.  
+
+\subsection{Numerical schemes for FBSDEs}
+
+To solve the FBSDE \autoref{eq:fbsde} numerically, we need to discretise both the forward and the backward SDE in time. Discretising the forward SDE is straightforward, and can for example be done using the (forward) Euler-Maruyama scheme
+%
+\begin{align} 
+    \begin{cases}
+    &X_0^{h} = x\\
+    &X_{(i+1)h}^{(h)} = X_{ih}^{(h)} + b(ih,X_{ih}^{(h)}) h + \sigma(ih,X_{ih}^{(h)})(W_{(i+1)h}-W_{ih}).
+    \end{cases}
+\end{align}
+%
+We will use this discretised version of $X_t$ in the scheme for $Y_t=u(t,X_t)$, or similarly in the scheme for $u(t,x)$. For simplicity, we will here consider the case where $g$ is a function of $t,x,$ and $u$, but not of $\nabla u$.
+
+By using the tower property of expectation on \autoref{eq:nonlinear-fc-for-y}, we can express $Y_{t_i}$ in terms of $Y_{t_{i+1}}$, and in terms of $X_t$ between $t_i$ and $t_{i+1}$ as
+%
+\begin{align} 
+    Y_{t_i} = \mathbb{E}\bigg[ Y_{t_{i+1}} + \int_{t_{i}}^{t_{i+1}}g(s,X_s,Y_s)ds \Big\lvert X_{t_i} \bigg].
+\end{align}
+%
+We recall that we are solving for $Y_t$ backwards in time, so for $t_i < t_{i+1}$, $Y_{t_{i+1}}$ is known.
+
+From the above, we can get the (backward) Euler scheme for $Y$, namely
+%
+\begin{align} % not entirely sure we're conditioning on the right thing here? But seems consistent with the below...
+    \begin{cases}
+    &Y_T^{(h)} = f(X_T^{h})\\
+    &Y_{ih}^{(h)} = \mathbb{E}\bigg[ Y_{(i+1)h}^{(h)} + h g(t_i,X_{ih}^{(h)},Y_{(i+1)h}^{(h)}) \Big\lvert X_{t_i}^{(h)} \bigg].
+    \end{cases}
+\end{align}
+%
+
+By conditioning on the discretised process $X^{(h)}$ starting at a specific value $x$ at time $t_i$, we get the same scheme for $u(t,x)$:
+%
+\begin{align}
+    \begin{cases}
+    &u^{(h)}(T,x) = f(x)\\
+    &u^{(h)}(t_i,x) = \mathbb{E}\bigg[ u^{(h)}(t_{i+1},X^{(h),t_i,x}_{t_{i+1}}) + h g\big( t_i,x,u^{(h)}(t_{i+1},X^{(h),t_i,x}_{t_{i+1}}) \big) \bigg]. 
+    \end{cases}
+\end{align} 
+%
+
+We note here that the accuracy of a numerical simulation of $u(t,x)$ (or $Y_t$) depends on both the scheme we choose for $X_t$, and the scheme we choose for $Y_t$. In \cite{fang2023strong} a strong stability preserving multistep scheme, which improves the latter, is introduced. This scheme is given by
+%
+\begin{align} % Is this in fact right? look at X-term
+    Y_{ih}^{(h)} = \sum_{j=1}^{k} \alpha_j \mathbb{E}\bigg[ Y_{(i+j)h}^{(h)} \Big\lvert X_{t_i}^{(h)} \bigg] + h \sum_{j=1}^{k} \beta_j \mathbb{E}\bigg[ g\big(t_{i+j},X_{(i+j)h}^{(h)},Y_{(i+j)h}^{(h)}\big) \Big\lvert X_{t_i}^{(h)} \bigg].
+\end{align}
+%
+The corresponding scheme for $u(t,x)$ becomes
+%
+\begin{align} 
+    u^{(h)}(t_i,x) = \sum_{j=1}^{k} \alpha_j \mathbb{E}\bigg[ u^{(h)}\Big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x}\Big) \bigg] + h \sum_{j=1}^{k} \beta_j \mathbb{E}\bigg[ g\Big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x},u^{(h)}\big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x}\big)\Big) \bigg].
+\end{align}
+%
+
+\subsection{Simplified toy example}
+
+% \bibliographystyle{plain}
+% \bibliography{bibliography.bib}
+\nocite{*}
+\printbibliography
+%
+\end{document}

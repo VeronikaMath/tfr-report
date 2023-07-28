@@ -1,0 +1,52 @@
+
+\usepackage[utf8]{inputenc}
+% \usepackage{natbib}
+\usepackage{biblatex}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage[table,xcdraw]{xcolor}
+\usepackage{svg}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
+\usepackage{lmodern}
+\usepackage{units}
+\usepackage{icomma}
+\usepackage{graphicx}
+\usepackage{eurosym}
+\usepackage{verbatim}
+\usepackage[margin=3.4cm]{geometry}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{mathtools}
+\usepackage{caption}
+\usepackage{color} %red, green, blue, yellow, cyan, magenta, black, white
+\definecolor{mygreen}{RGB}{28,172,0} % color values Red, Green, Blue
+\definecolor{mylilas}{RGB}{170,55,241}
+\setcounter{MaxMatrixCols}{30}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\usepackage{textcomp}
+\usepackage[titletoc,title]{appendix}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\allowdisplaybreaks
+%
+\lstset{language=Matlab,%
+    %basicstyle=\color{red},
+    breaklines=true,%
+    morekeywords={matlab2tikz},
+    keywordstyle=\color{black},%
+    morekeywords=[2]{1}, keywordstyle=[2]{\color{black}},
+    identifierstyle=\color{black},%
+    stringstyle=\color{mylilas},
+    commentstyle=\color{mygreen},%
+    showstringspaces=false,%without this there will be a symbol in the places where there is a space
+    numbers=left,%
+    numberstyle={\tiny \color{black}},% size of the numbers
+    numbersep=9pt, % this defines how far the numbers are from the text
+    emph=[1]{for,end,break},emphstyle=[1]\color{black}, %some words to emphasise
+    %emph=[2]{word1,word2}, emphstyle=[2]{style},    
+}
