@@ -209,7 +209,84 @@ Comparing \autoref{eq:nonlinear-fc} to \autoref{eq:linear-fc}, we note that the 
 
 We have now seen that the solution to the terminal value problem (backward PDE) of \autoref{eq:nonlinear-pde} is associated with the backward SDE in \autoref{eq:fbsde}. This is a generalisation of the connection discussed in the previous subsection, and we note that by letting $g$ depend on only $t$ and $x$, we can formulate a less general backward SDE and recover a version of the linear Feymnan-Kac formula of \autoref{eq:linear-fc}, glossing over some subtleties related to the discount factor $k(t,x)$.
 
-As before, the PDE directly associated with the forward SDE in \autoref{eq:fbsde} is the Kolmogorov forward equation of \autoref{eq:kolmogorov-forward} with initial condition $p(0,y)=\delta(y-x)$. It is not clear whether a Feynman-Kac formula can be obtained for a more general PDE featuring the operator $\mathcal{L}^*$ defined in \autoref{eq:adjoint-operator} rather than the operator $\mathcal{L}$ of \autoref{eq:generator-operator}.  
+As before, the PDE directly associated with the forward SDE in \autoref{eq:fbsde} is the Kolmogorov forward equation of \autoref{eq:kolmogorov-forward} with initial condition $p(0,y)=\delta(y-x)$. It is not clear whether a Feynman-Kac formula can be obtained for a more general PDE featuring the operator $\mathcal{L}^*$ defined in \autoref{eq:adjoint-operator} rather than the operator $\mathcal{L}$ of \autoref{eq:generator-operator}. 
+
+\subsection{FBSDEs and systems of PDEs}
+
+It is also possible to write down a more general version of \autoref{eq:fbsde}, where the process $Y_t$ which solves the backward SDE is allowed to be $K$-dimensional. This process can then be used to write down a probabilistic representation of the solution to a system of $K$ coupled PDEs (each with a terminal condition) of the type written down in \autoref{eq:nonlinear-pde}. For simplicity, here we consider the case where the source term $g$ does not depend on the gradient of $u$. Specifically, we then seek a probabilistic representation of $u = (u^{[1]},...,u^{[K]})$, where 
+%
+\begin{align} 
+    \label{eq:pde-system}
+\begin{cases}
+    &\partial_t u^{[k]}(t,x) + \mathcal{L}^{[k]} u^{[k]}(t,x) + g^{[k]}(t,x,u(t,x)) = 0\\
+    &u^{[k]}(T,x) = f^{[k]}(x)
+\end{cases}
+\end{align}
+%
+for $k=1,2,...,K$, and $g=(g^{[1]},...,g^{[K]})$, $f=(f^{[1]},...,f^{[K]})$. We note that in general each component of $g$ depends on the whole of $u$, and not just a particular component $u^{[k]}$.
+
+Here, as before, $\mathcal{L}^{[k]}$ denotes the generator of a diffusion process, such as that described in the forward SDE of \autoref{eq:fbsde}. If the operator $\mathcal{L}^{[k]}$ is the same for each $k$, it is enough to consider one diffusion process $X_t$. However, if $\mathcal{L}^{[k]}$ is different for each $k$, we need $K$ different diffusion processes $(X_t^{[1]},...,X_t^{[K]})$, with corresponding generators $(\mathcal{L}^{[1]},...,\mathcal{L}^{[K]})$. In general, each process $X_t^{[k]}$ is $d$-dimensional, i.e. of the same dimension as the variable $x$ in the PDE in \autoref{eq:pde-system}. 
+
+For simplicity, here we consider the case where the $X_t^{[k]}$ are one dimensional, and have constant coefficients, but the below argument is easily generalised to the $d$-dimensional case with nonconstant coefficients. We then have
+%
+\begin{align} 
+    X_t^{[k]} = x + \int_{0}^{t} b_k ds + \int_{0}^{t}\sigma_k dW_s^{[k]}
+\end{align}
+%
+each with corresponding generator
+%
+\begin{align} 
+    \mathcal{L}^{[k]} = \frac{1}{2} \sigma_k^2 \partial_x^2 + b_k \partial_x.
+\end{align}
+%
+
+We now claim that the processes $Y_t = (Y_t^{[1]},...,Y_t^{[K]})$ and $Z_t=(Z_t^{[1]},...,Z_t^{[K]})$ defined by 
+%
+\begin{align}
+    \label{eq:y-def}
+    Y_t^{[k]} &= u^{[k]}(t,X_t^{[k]})\\
+    Z_t^{[k]} &= \sigma_k \partial_x u^{[k]}(t,X_t^{[k]})
+\end{align}
+%
+obey the backward SDE
+%
+\begin{align} 
+    \label{eq:component-bsde}
+    Y_t^{[k]} = f^{[k]}(X_T^{[k]}) + \int_t^T g^{[k]}\big( s, X_s^{[k]},u(s,X_s) \big)ds - \int_t^T Z_s^{[k]}dW_s^{[k]},
+\end{align}
+%
+where $u(s,X_s) = \big( u^{[1]}(s,X_s^{[1]}),..., u^{[K]}(s,X_s^{[K]})\big)$.
+
+We show this holds by (componentwise) applying Itô's formula
+%
+\begin{align} 
+    v(s,X_s) = v(s_0,X_{s_0}) + \int_{s_0}^{s} [\partial_t + \mathcal{L}] v(r,X_r)dr + \int_{s_0}^{s} \partial_x v(r,X_r) \sigma(r,X_r)dW_r,
+\end{align}
+%
+where $\mathcal{L}$ is the generator of the diffusion process given by
+%
+\begin{align} 
+    X_s = X_{s_0} + \int_{s_0}^{s} b(r,X_r)ds + \int_{s_0}^{s}\sigma(r,X_r)dW_r,
+\end{align}
+%
+to the process $Y_t=(Y_t^{[1]},...,Y_t^{[K]})$ defined by \autoref{eq:y-def}, with $s_0=t$ and $s=T$. By noting that $u^{[k]}(T,X_T^{[k]})=f^{[k]}(X_T^{[k]})$ the result follows.
+
+To obtain a Feynman-Kac formula for $u(t,x)$ we take a conditional expectation of \autoref{eq:component-bsde}. What to condition on is slightly subtle. By considering that the equations for $u^{[k]}(t,x)$ for each $k$ must be equations of the same variable $x$, and are coupled through the function $g$, we can see that a sensible thing to condition on is $X_t^{[1]}=x,...,X_t^{[K]}=x$. In other words, we start each of the diffusions $X^{[k]}_s$ at the same point $x$ at time $t$.
+We then get the Feynman-Kac formula
+%
+\begin{align} 
+    u^{[k]}(t,x) = \mathbb{E}\bigg[ f^{[k]}(X_T^{[k],x,t}) + \int_{t}^{T} g^{[k]}\big( s, X_s^{[k],x,t}, u(s,X_s^{x,t}) \big)ds \bigg],
+\end{align}
+%
+where $X_T^{[k],x,t}$ denotes the process $X_s^{[k]}$ started at $x$ at time $t$, and $X_s^{x,t}$ denotes the ($k$-dimensional) $(X_s^{[1]},...,X_s^{[K]})$ started at $(x,...,x)$ at time $t$.
+
+Similarly to before, we can also write down a formula for $Y_t^{[k]}$ as 
+%
+\begin{align}
+Y_t^{[k]} = \mathbb{E}\bigg[ f^{[k]}(X_T^{[k]}) + \int_{t}^{T} g^{[k]}\big( s,X_s^{[k]},Y_s\big)ds \Big\lvert X_t^{[1]},...,X_t^{[K]}\bigg],
+\end{align}
+%
+by conditioning on the processes $(X_t^{[1]},...,X_t^{[K]})$, at time $t$, instead of on $(X_t^{[1]}=x,...,X_t^{[K]}=x)$.
 
 \subsection{Numerical schemes for FBSDEs}
 
@@ -265,7 +342,77 @@ The corresponding scheme for $u(t,x)$ becomes
 \end{align}
 %
 
-\subsection{Simplified toy example}
+\subsection{Connecting the treatment planning problem and the FBSDE}
+
+Here, we seek to connect the coupled PDEs that arise from the treatment planning problem to the framework of FBSDEs.
+
+The PDE system arising from the treatment planning problem (with $u^{[1]}$ denoting the primal, and $u^{[2]}$ the dual) is given by
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \Delta u^{[1]} + b \cdot \nabla u^{[1]} &= \frac{1}{\alpha} u^{[2]} \\
+    - \partial_t u^{[2]} - \mu \Delta u^{[2]} - b \cdot \nabla u^{[2]} &= u^{[1]} - d_T.
+    \end{cases}
+\end{align}
+%
+We also have the boundary condition $u^{[1]}=u^{[2]}=0$ on the boundary. 
+%Here, could we say that the primal equation is solved forward in time, and the dual backward in time?
+%
+For simplicity, we consider only one spatial dimension
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \partial^2_x u^{[1]} + b \partial_x u^{[1]} &= \frac{1}{\alpha} u^{[2]} \\
+    - \partial_t u^{[2]} - \mu \partial_x^2 u^{[2]} - b \partial_x u^{[2]} &= u^{[1]} - d_T.
+    \end{cases}
+\end{align}
+%
+
+Rewriting this to be of the form of \autoref{eq:pde-system}:
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \partial^2_x u^{[1]} + b \partial_x u^{[1]} - \frac{1}{\alpha} u^{[2]} &= 0 \\
+    \partial_t u^{[2]} + \mu \partial_x^2 u^{[2]} + b \partial_x u^{[2]} - (u^{[1]} - d_T) &= 0.
+    \end{cases}
+\end{align}
+%
+This is equivalent to 
+%
+\begin{align} 
+    \begin{cases}
+    \partial_t u^{[1]} + \mathcal{L}^{[1]} u^{[1]} + g^{[1]} &= 0\\
+    \partial_t u^{[2]} + \mathcal{L}^{[2]} u^{[2]} + g^{[2]} &= 0
+    \end{cases}
+\end{align}
+%
+for 
+%
+\begin{align} 
+    % \begin{cases}
+    &\mathcal{L}^{[1]} = - \mu \partial_x^2 + b \partial_x\\
+    &\mathcal{L}^{[2]} = \mu \partial_x^2 + b \partial_x
+    % \end{cases}
+\end{align}
+%
+and 
+%
+\begin{align} 
+    % \begin{cases}
+    &g^{[1]} = -\frac{1}{\alpha} u^{[2]}\\
+    &g^{[2]} = -(u^{[1]}-d_T).
+    % \end{cases}
+\end{align}
+%
+Questions/uncertainties:
+\begin{itemize}
+    \item $\mathcal{L}^{[1]}$ cannot be the generator of a diffusion, as this would require $\frac{1}{2}\sigma^2 = -\mu$, i.e. a diffusion coefficient $\sigma = \sqrt{-2\mu}$, which would be imaginary
+    \item If we could time-reverse the forward equation (change the sign of the $\partial_t$-term) we'd maybe get the form we want (since the sign of the drift coefficient $b$ doesn't matter), but does this actually make sense to do?
+    \item In the PDEs resulting from the treatment planning problem, is the primal forward in time and the dual backward in time? If so, maybe it would make sense to time-reverse the primal equation, since the FBSDE framework works with multiple equations backward in time (with terminal conditions)?
+    \item If the above works out, what should the terminal condition(s)/initial condition(s) be? I.e. what are the functions $f^{[k]}(x)$?
+\end{itemize}
+
+% \subsection{Simplified toy example}
 
 % \bibliographystyle{plain}
 % \bibliography{bibliography.bib}
