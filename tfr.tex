@@ -62,6 +62,132 @@ Using the method of Lagrange multipliers, we can solve the above optimisation pr
 \end{align}
 %
 
+\subsection{Deriving coupled PDEs from the treatment planning problem}
+
+% - PDE constrained optimisation problem 
+
+% - Introduce our special case model
+
+% - But, what norm do we use? Introduce Bochner spaces (and this particular one also has an inner product, which is important)
+
+% - Write down the Lagrangian
+
+% - Functional derivatives = zero yields three equations, which become the two coupled PDEs
+
+% - Comment on how the problem would change if we changed the norm we're minimising in?
+
+We formulate the treatment planning problem as a constrained optimisation problem, where the constraint is a PDE describing the evolution of radiation in the domain. If we let $u$ denote the radiation intensity in the domain, and $d_T$ the target intensity, we seek the function $u$ that gives
+%
+\begin{align} 
+    \label{eq:to-minimise}
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+\end{align}
+%
+for some constant $\alpha$, and subject to the constraint
+%
+\begin{align}
+    \label{eq:pde-constraint}
+    &\partial_t u + \div{(\underline{b} u + A \nabla u)} = g\\
+    &{u \rvert}_{\partial \Omega} = 0.
+\end{align}
+%
+The constraint describes the physical evolution of radiation in the domain. Here, we are specifically interested in describing radiation in terms of its evolution as a function of time $t$, spatial position $x$, and the velocity $v$ of the radiation particles. If we only consider one spatial dimension, our problem will have a total of two dimensions in addition to time, i.e. the domain $\Omega=\mathbb{R}\cross\mathbb{R}$ is two-dimensional, with one dimension being position and the other velocity. Thus, $u(t,x,v): \mathbb{R}^{+} \cross \Omega \rightarrow \mathbb{R}$.
+
+Specifically, we will consider a model where
+%
+\begin{equation}
+\underline{b} = 
+\begin{pmatrix}
+    &v\\
+    &-a(v)
+\end{pmatrix},
+A = 
+\begin{pmatrix}
+    &0 &0\\
+    &0 &-\frac{\sigma^2}{2}
+\end{pmatrix},
+\end{equation}
+%
+meaning that we only have a second derivative with respect to $v$, and not with respect to $x$.
+
+So far, we have formulated this optimisation problem without specifying which norm is used in \autoref{eq:to-minimise}. An intuitive choice may be the $L^2$ norm over the domain $\Omega$, but if we choose this norm we haven't taken into account the time dependence of $u$. With this in mind, we introduce the more general concept of a Bochner space $L^p(T;X)$ and the corresponding norm
+%
+\begin{align} 
+    {\lVert (\cdot) \rVert}^p_{L^p(T,X)} := \int_{T} {\lVert (\cdot)\rVert}^p_X dt, 
+\end{align}
+%
+where $X$ is a Banach space with corresponding norm ${\lVert \cdot\rVert}_X$. Specifically, we require the case where $T$ is a time interval and $X=L^2(\Omega)$. A suitable choice for the norm to minimise \autoref{eq:to-minimise} in is then the following;
+%
+\begin{align} 
+    \lVert f \rVert_{L^2([0,T];L^2(\Omega))} &:= \int_{0}^{T}  {\lVert f \rVert}^2_{L^2(\Omega)} dt\\
+    &= \int_{0}^{T} \int_{\Omega} f^2 d\Omega dt.\\
+\end{align}
+%
+We note that the space $L^2([0,T];L^2(\Omega))$ additionally has an inner product, namely
+%
+\begin{align} 
+    \innerprod{f}{g}_{L^2(T;L^2(\Omega))} &:= \int_{0}^{T} \innerprod{f}{g}_{L^2(\Omega)} dt \\
+    & = \int_{0}^{T} \int_{\Omega} fg d\Omega dt.
+\end{align}
+%
+This inner product will be used in what follows.
+
+We now proceed to treat the minimisation problem, using the method of Lagrange multipliers. First, we formulate the Lagrangian function for the optimisation problem specified by \autoref{eq:to-minimise} and \autoref{eq:pde-constraint}. Then, we take generalised derivatives of the Lagrangian function and set these to zero. Finally, from the resulting equations we obtain a set of two coupled PDEs.
+
+The Lagrangian function is given by
+%
+\begin{align} 
+    \mathcal{L}(u,g,z) := \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2 - \innerprod{u}{\partial_t z} - \innerprod{u}{\underline{b} \cdot \nabla z} + \innerprod{\nabla u}{A \nabla z} - \innerprod{g}{z},
+\end{align}
+%
+where we use $\lVert \cdot \rVert$ and $\innerprod{\cdot}{\cdot}$ to denote the norm and inner product in $L^2([0,T];L^2(\Omega))$, here and in what follows. The function $u$ is the function that we seek in the minimisation problem, $g$ is the source term from the constraining PDE, and $z$ is another function known as the Lagrange multiplier, which is introduced to capture the constraint.
+
+By taking generalised (functional) derivatives of $\mathcal{L}$ with respect to $u$,$z$, and $g$ we obtain the following;
+%
+\begin{align} 
+    D_u \mathcal{L}[\phi] &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \underline{b}\cdot\nabla z + A \nabla z \cdot \nabla \phi \Big) d\Omega dt\\
+    &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \underline{b}\cdot\nabla z + \div{(A \nabla z)} \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_z\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \phi \partial_t u + \div{(\underline{b}u)} \phi - \div{(A \nabla u)} \phi - g \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_g\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \alpha g \phi - z \phi \Big) d\Omega dt,
+\end{align}
+%
+where $\phi = \phi(t,x,v)$ is a suitable test function.
+
+By requiring $D_u \mathcal{L}[\phi]=D_z \mathcal{L}[\phi]=D_g \mathcal{L}[\phi]=0$ we get a PDE for $z$;
+%
+\begin{align} 
+    - \partial_t z - \underline{b} \cdot \nabla z - \div{(A \nabla z)} + (u - d_T) = 0,
+\end{align}
+% 
+a PDE for $u$;
+%
+\begin{align} 
+    \partial_t u + \div{(\underline{b}u)} - \div{(A \nabla u)} - g = 0,
+\end{align}
+%
+which we note recovers the constraint \autoref{eq:pde-constraint}, and finally a relationship between $z$ and $g$;
+%
+\begin{align}
+    \alpha g - z = 0. 
+\end{align}
+%
+Putting these three equations together, we obtain the coupled PDEs 
+%
+\begin{align} 
+    \begin{cases} 
+        \partial_t u + \div{(\underline{b}u)} - \div{(A \nabla z)} &= \frac{1}{\alpha} z\\
+        \partial_t z + \underline{b} \cdot \nabla z + \div{(A \nabla z)} &= u - d_T,
+    \end{cases}
+\end{align}
+%
+where the source term of the equation for $u$ depends on $z$, and vice versa.
+
 \subsection{Forward SDE and linear Feynman-Kac formula}
 
 Let $b:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^d$, $\sigma:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^{d \times d}$, and $W_t$ a $d$-dimensional Brownian motion. Consider the $d$-dimensional SDE
