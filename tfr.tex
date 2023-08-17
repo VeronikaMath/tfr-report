@@ -180,8 +180,9 @@ which we note recovers the constraint \autoref{eq:pde-constraint}, and finally a
 Putting these three equations together, we obtain the coupled PDEs 
 %
 \begin{align} 
+    \label{eq:coupled-pdes}
     \begin{cases} 
-        \partial_t u + \div{(\underline{b}u)} - \div{(A \nabla z)} &= \frac{1}{\alpha} z\\
+        \partial_t u + \div{(\underline{b}u)} - \div{(A \nabla u)} &= \frac{1}{\alpha} z\\
         \partial_t z + \underline{b} \cdot \nabla z + \div{(A \nabla z)} &= u - d_T,
     \end{cases}
 \end{align}
@@ -538,7 +539,166 @@ Questions/uncertainties:
     \item If the above works out, what should the terminal condition(s)/initial condition(s) be? I.e. what are the functions $f^{[k]}(x)$?
 \end{itemize}
 
-% \subsection{Simplified toy example}
+\subsection{Numerical solution using a mixed approach}
+
+- Overall idea of numerical methods
+
+- Solving coupled PDEs iteratively: feeding soln of one into the other etc
+
+- IC/TC and boundary conditions
+
+- Specifics of the finite difference scheme 
+
+- Specifics of the MC scheme 
+
+- Interpolation of numerical solutions
+
+In this section, we describe an approach to numerically solve the coupled PDEs of \autoref{eq:coupled-pdes} using mixed numerical methods. Specifically, we will solve the primal equation using a finite difference scheme, and the dual equation using Monte Carlo methods. We recall that these equations are given by 
+%
+\begin{align} 
+    % \label{eq:coupled-pdes}
+    \begin{cases} 
+        \partial_t u + \div{(\underline{b}u)} - \div{(A \nabla u)} &= \frac{1}{\alpha} z\\
+        \partial_t z + \underline{b} \cdot \nabla z + \div{(A \nabla z)} &= u - d_T,
+    \end{cases}
+\end{align}
+%
+where the equation for $u$ is forward in time, and the equation for $z$ is backward in time. 
+
+Since the solution of the primal equation depends on the solution of the dual equation and vice versa, we will need to take an iterative approach, numerically solving the primal equation first, using that numerical solution as input into the numerical scheme for the dual equation, etc. We recall that we are interested in the final solution $u$ to the primal equation, but not directly in the final solution $z$ to the dual equation. The overall structure of the algorithm will be as follows:
+
+\begin{enumerate}
+    \item Initialize $u$ as $u_0(x,v)$ and solve the equation for $u$ with no source term, forward in time up to $t=T$.
+    \item Initialize $z$ as $z(T,x,v)=u(T,x,v)$, using the $u$ calculated in step 1, and with the calculated $u$ as source term, and solve backward in time to $t=0$.
+    \item Again initialize $u$ as $u_0(x,v)$ and solve forward in time to $t=T$, now using the $z$ calculated in step 2 as the source term.
+    \item Repeat from step 2 until $\lVert u_{prev} - u_{curr}\rVert < tol$ for some tolerance, and in some suitable norm.
+\end{enumerate}
+
+We now go on to describe in more detail how to implement this numerically, and cover the details of the numerical schemes we propose to use.
+
+To formulate the finite difference scheme for the forward equation, we need to discretise the derivatives that feature in the equation. Recalling the form of the coefficients $A$ and $\underline{b}$, this means that we need to discretise first order derivatives with respect to time, positiion, and velocity, and a second order derivative with respect to velocity.
+
+We approcimate the $t$-derivative by a backward difference as
+%
+\begin{align} 
+    \partial_t u(t,x,v) \approx \frac{u(t,x,v) - u(t-\Delta t,x,v)}{\Delta t}
+\end{align}
+%
+and similarly the $x$-derivative as
+%
+\begin{align} 
+    \partial_x u(t,x,v) \approx \frac{u(t,x,v) - u(t,x-\Delta x,v)}{\Delta x}
+\end{align}
+%
+and the first order $v$-derivative as
+%
+\begin{align} 
+    \partial_v u(t,x,v) \approx \frac{u(t,x,v) - u(t,x,v-\Delta v)}{\Delta v}.
+\end{align}
+%
+Finally, we approximate the second order $v$-derivative by a central difference as
+%
+\begin{align} 
+    \partial^2_v u(t,x,v) &\approx \frac{\frac{u(t,x,v+\Delta v)-u(t,x,v)}{\Delta v}-\frac{u(t,x,v)-u(t,x,v-\Delta v)}{\Delta v}}{\Delta v}\\
+    &= \frac{u(t,x,v+\Delta v)- 2 u(t,x,v) + u(t,x,v-\Delta v)}{{(\Delta v)}^2}.
+\end{align}
+%
+Now, we uniformly partition the domain, and let $\Delta t = \frac{T}{N}$,$\Delta x = \frac{X}{M}$, $\Delta v = \frac{V}{M}$, where $T$ denotes the final time, and $X$ and $V$ denote the maximum position and velocity in the domain respectively. Here, we have also chosen to include the same number of points in the position and velocity directions, but a potentially different number of points in the time direction. By denoting  $t_n=n\Delta t$, $x_i=i\Delta x$,$v_j=j\Delta v$ and $u(t_n,x_i,v_j)$ by $u^n_{i,j}$, we can write down a finite difference scheme approximating $u$. Specifically, we write down a scheme that is explicit in the first derivatives but implicit in the second derivative. First writing down this scheme having only discretised in time we have
+%
+\begin{align} % or should this be z^{n-1}?
+    \frac{u^n-u^{n-1}}{\Delta t} + \div{(\underline{b}u^{n-1} - A \nabla u^n)} = \frac{1}{\alpha} z^n,
+\end{align}
+%
+where $z^n$ is a discretised solution of the backward equation, which we will describe in more detail later on.
+
+The finite difference scheme for $u$ discretised in $t$,$x$, and $v$ is then given by 
+%
+\begin{align} 
+    \frac{1}{\alpha}z^n_{i,j} &= \frac{u^n_{i,j}-u^{n-1}_{i,j}}{\Delta t} + v_j \frac{u^{n-1}_{i,j}-u^{n-1}_{i-1,j}}{\Delta x} - u^{n-1}_{i,j}a'(v_j) - a(v_j)\frac{u^{n-1}_{i,j}-u^{n-1}_{i,j-1}}{\Delta v}\\
+     &- \frac{\sigma^2}{2}\frac{u^n_{i,j+1}-2u^n_{i,j}+u^n_{i,j-1}}{(\Delta v)^2}.
+\end{align}
+%
+Collecting terms in $u^n$ and $u^{n-1}$ we get
+%
+\begin{align} 
+    \label{eq:finite-difference}
+    u^n_{i,j} - \frac{\sigma^2\Delta t}{2(\Delta v)^2}(u^n_{i,j+1}-2u^n_{i,j}+u^n_{i,j-1}) &= u^{n-1}_{i,j} - \frac{\Delta t}{\Delta x}v_j(u^{n-1}_{i,j}-u^{n-1}_{i-1,j}) + \Delta t a'(v_j) u^{n-1}_{i,j}\\ 
+    &+ \frac{\Delta t}{\Delta v} a(v_j)(u^{n-1}_{i,j}-u^{n-1}_{i,j-1}) + \Delta t z^{n}_{i,j}.
+\end{align}
+%
+
+We can write this in matrix form by letting 
+%
+\begin{align} 
+    \underline{u}^n = 
+    \begin{pmatrix}
+        &u^n_{1,1}\\
+        & u^n_{1,2}\\
+        & \cdots \\
+        &u^n_{1,M}\\
+        &u^n_{2,1}\\
+        & \cdots \\ 
+        & \cdots \\ 
+        &u^n_{M,M-1}\\
+        &u^n_{M,M} 
+    \end{pmatrix}
+\end{align}
+%
+and similarly defining $\underline{u}^{n-1}$ and $\underline{z}^n$. The matrix form of \autoref{eq:finite-difference} then becomes 
+%
+\begin{align} 
+    \label{eq:fd-matrix}
+    B \underline{u}^n = C \underline{u}^{n-1} + \Delta t \underline{z}^n,
+\end{align}
+%
+where $B$ and $C$ are matrices of size $M^2 \cross M^2$, and $\underline{u}^n$, $\underline{u}^{n-1}$ and $\underline{z}^n$ are column vectors of length $M^2$. Enforcing zero boundary conditions, the nonzero entries of $B$ are given by
+%
+\begin{align} 
+    \begin{cases} 
+        B_{k,k} &= 1 + \sigma^2 \frac{\Delta t}{(\Delta v)^2}\\
+        B_{k,k+1} &= - \frac{\sigma^2}{2},\text{ unless } k \equiv 0 \mod M\\ 
+        B_{k,k-1} &= - \frac{\sigma^2}{2},\text{ unless } k \equiv 1 \mod M
+    \end{cases}
+\end{align}
+%
+and the nonzero entries of $C$ are given by 
+%
+\begin{align} 
+    \begin{cases}
+        C_{k,k} &= \beta_{k \mod M}\\
+        C_{k,k-1} &= - \delta_{k \mod M}\text{ unless } k \equiv 1 \mod M\\
+        C_{k,k-M} &= \gamma_{k \mod M}
+    \end{cases}
+\end{align}
+%
+where 
+%
+\begin{align} 
+    \begin{cases} 
+        \beta_j &= 1 - v_j \frac{\Delta t}{\Delta x} + a'(v_j)\Delta t + a(v_j)\frac{\Delta t}{\Delta v}\\
+        \gamma_j &= v_j \frac{\Delta t}{\Delta x} \\
+        \delta_j &= a(v_j)\frac{\Delta t}{\Delta v}
+    \end{cases}
+\end{align}
+%
+
+We note that the rows (and columns) of $B$ and $C$ are labelled in the same order as the rows of $\underline{u}^n$, namely $(1,1),(1,2),\dots,(1,M),(2,1),\dots(M,M)$. We map this labeling to the index $k$ running from $1$ to $M^2$ as 
+%
+\begin{align}
+    k(i,j) = (i-1)M + j.
+\end{align}
+%
+Hence, the conditions $k\equiv 0 \mod M$ and $k\equiv 1 \mod M$ correspond to rows labeled $(i,M)$ and $(i,1)$ respectively. We also note that for a fixed $j$ the coefficients $\beta_j$, $\gamma_j$, $\delta_j$ occur on rows labeled $(i,j)$ for $i=1,\dots,M$, and so on row $k$ of the matrix $C$, the coefficients labelled $j = k \mod M$ occur.
+
+By inverting the matrix $B$ in \autoref{eq:fd-matrix} we get an explicit expression for $\underline{u}^n$ in terms of $\underline{u}^{n-1}$, namely
+%
+\begin{align} 
+    \underline{u}^n = B^{-1}C\underline{u}^{n-1} + \Delta t B^{-1}\underline{z}^n.
+\end{align}
+%
+This equation gives the procedure for stepping one step forward in time, so to get from $t=0$ to $T=0$, taking $n$ steps of size $\Delta t = \frac{T}{N}$ in time, we will need to apply the equation $N$ times.
+
+Now, we go on to discuss the details of the scheme implemented to solve the dual equation for $z$. As previously outlined, we will employ a Feynman-Kac formula connecting the dual equation to a stochastic differential equation (SDE), and then use Monte-Carlo simulation to obtain an approximation of the solution $z$.
 
 % \bibliographystyle{plain}
 % \bibliography{bibliography.bib}
