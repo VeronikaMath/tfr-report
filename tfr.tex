@@ -97,7 +97,7 @@ for some constant $\alpha$, and subject to the constraint
 %
 \begin{align}
     \label{eq:pde-constraint}
-    &\partial_t u + \div{(\vecbf{b} u + \vecbf{A} \nabla u)} = g\\
+    &\partial_t u + \div{(\vecbf{b} u - \vecbf{A} \nabla u)} = g\\
     &{u \rvert}_{\partial \Omega} = 0.
 \end{align}
 %
@@ -114,7 +114,7 @@ Specifically, we will consider a model where
 \vecbf{A} = 
 \begin{pmatrix}
     &0 &0\\
-    &0 &-\frac{\sigma^2}{2}
+    &0 &\frac{\sigma^2}{2}
 \end{pmatrix},
 \end{equation}
 %
@@ -449,7 +449,7 @@ By using the tower property of expectation on \autoref{eq:nonlinear-fc-for-y}, w
 %
 We recall that we are solving for $Y_t$ backwards in time, so for $t_i < t_{i+1}$, $Y_{t_{i+1}}$ is known.
 
-From the above, we can get the (backward) Euler scheme for $Y$, namely
+From the above, we can get the Euler scheme (iterating backwards in time) for $Y$, namely
 %
 \begin{align} % not entirely sure we're conditioning on the right thing here? But seems consistent with the below...
     \begin{cases}
@@ -554,17 +554,17 @@ Questions/uncertainties:
 
 \subsection{Numerical solution using a mixed approach}
 
-- Overall idea of numerical methods
+% - Overall idea of numerical methods
 
-- Solving coupled PDEs iteratively: feeding soln of one into the other etc
+% - Solving coupled PDEs iteratively: feeding soln of one into the other etc
 
-- IC/TC and boundary conditions
+% - IC/TC and boundary conditions
 
-- Specifics of the finite difference scheme 
+% - Specifics of the finite difference scheme 
 
-- Specifics of the MC scheme 
+% - Specifics of the MC scheme 
 
-- Interpolation of numerical solutions
+% - Interpolation of numerical solutions
 
 In this section, we describe an approach to numerically solve the coupled PDEs of \autoref{eq:coupled-pdes} using mixed numerical methods. Specifically, we will solve the primal equation using a finite difference scheme, and the dual equation using Monte Carlo methods. We recall that these equations are given by 
 %
@@ -618,7 +618,8 @@ Since the solution of the primal equation depends on the solution of the dual eq
     \item For $k=1,\dots,k_{max}$:
     \begin{enumerate}
         \item Using $z^{(k-1)}$ as defined above, consider the initial value problem 
-        \begin{align} 
+        \begin{align}
+            \label{eq:primal-iteration} 
             \begin{cases}
                 &\partial_t u^{(k)} + \div{(\vecbf{b}u^{(k)})} - \div{(\vecbf{A} \nabla u^{(k)})} = \frac{1}{\alpha} z^{(k-1)}\\
                 &u^{(k)}(0,x,v) = f_0(x,v)
@@ -627,6 +628,7 @@ Since the solution of the primal equation depends on the solution of the dual eq
         and obtain its solution $u^{(k)}(t,x,v)$.
         \item Then, using $u^{(k)}$ as defined above, consider the terminal value problem 
         \begin{align}
+            \label{eq:dual-iteration}
             \begin{cases}
                 &\partial_t z^{(k)} + \vecbf{b} \cdot \nabla z^{(k)} + \div{(\vecbf{A} \nabla z^{(k)})} = u^{(k)} - d_T\\
                 &z^{(k)}(T,x,v) = u^{(k)}(T,x,v)
@@ -753,7 +755,7 @@ We note that the rows (and columns) of $\vecbf{B}$ and $\vecbf{C}$ are labelled 
 %
 Hence, the conditions $k\equiv 0 \mod M$ and $k\equiv 1 \mod M$ correspond to rows labeled $(i,M)$ and $(i,1)$ respectively. We also note that for a fixed $j$ the coefficients $\beta_j$, $\gamma_j$, $\delta_j$ occur on rows labeled $(i,j)$ for $i=1,\dots,M$, and so on row $k$ of the matrix $C$, the coefficients labelled $j = k \mod M$ occur.
 
-By inverting the matrix $B$ in \autoref{eq:fd-matrix} we get an explicit expression for $\vecbf{u}^n$ in terms of $\vecbf{u}^{n-1}$, namely
+By inverting the matrix $\vecbf{B}$ in \autoref{eq:fd-matrix} we get an explicit expression for $\vecbf{u}^n$ in terms of $\vecbf{u}^{n-1}$, namely
 %
 \begin{align} 
     \label{eq:fd-matrix-ii}
@@ -774,6 +776,117 @@ which corresponds to the condition
 %
 
 Now, we go on to discuss the details of the scheme implemented to solve the dual equation for $z$. As previously outlined, we will employ a Feynman-Kac formula connecting the dual equation to a stochastic differential equation (SDE), and then use Monte-Carlo simulation to obtain an approximation of the solution $z$.
+
+Considering the dual equation in \autoref{eq:coupled-pdes}, we see that it can be written as
+%
+\begin{align} 
+    \label{eq:dual-eqn}
+    &\partial_t z + \mathcal{L} z + d_T - u = 0 \\
+    &z(T,x,v) = u(T,x,v)
+\end{align}
+%
+with the differential operator $\mathcal{L}$ being of the form
+%
+\begin{align} 
+    \mathcal{L}z &= \vecbf{b}\cdot \nabla z + \div{\vecbf{A}\nabla z} \\
+    &= v \partial_x z - a(v) \partial_v z + \frac{\sigma^2}{2}\partial^2_v z.
+\end{align}
+%
+This is the generator of the stochastic process given by the two-dimensional SDE
+%
+\begin{align} 
+    Y_t &= \begin{pmatrix}
+        x\\
+        v
+    \end{pmatrix} 
+    + \int_0^t \vecbf{b} ds + \int_0^t \sqrt{2}\vecbf{A}^{1/2} dW_s,\\
+\end{align}
+%
+where $\vecbf{A}^{1/2}$ denotes the matrix square-root of $\vecbf{A}$. We also note that $W_s$ is a two-dimensional Brownian motion. Making explicit the forms of $\vecbf{A}$ and $\mathbf{b}$ we can write the SDE as
+
+%
+\begin{align}
+    \label{eq:model-sde}
+    Y_t = 
+\begin{pmatrix}
+    X_t\\
+    V_t
+\end{pmatrix}
+= 
+\begin{pmatrix}
+    x\\
+    v
+\end{pmatrix}
++ \int_0^t 
+\begin{pmatrix}
+    V_s\\
+    -a(V_s)
+\end{pmatrix}
+ds 
++ \int_0^t
+\begin{pmatrix}
+    0 & 0\\
+    0 & \sigma 
+\end{pmatrix}
+\begin{pmatrix}
+    dW_s^{(1)}\\
+    dW_s^{(2)}
+\end{pmatrix}.
+\end{align}
+%
+Using the process $Y_t$, we can now write down a probabilistic representation of the solution to the dual equation \autoref{eq:dual-eqn} as
+%
+\begin{align}
+    z(t,x,v) = \mathbb{E} \bigg[ u(T,X_T^{t,x},V_T^{t,v}) + \int_t^T d_T(s,X_s^{t,x},V_s^{t,x}) - u(s,X_s^{t,x},V_s^{t,x}) ds \bigg],
+\end{align}
+%
+where $X_s^{t,x}$ denotes the stochastic process $X_s$ at time $s$, started at the initial value $x$ at time $t<s$.
+
+To compute an approximation of $z$ using this probabilistic representation, we need to estimate the expectation $\mathbb{E}[(\cdot)]$. This is easily done by taking a Monte Carlo approach, where we estimate the expectation as the empirical mean over a number of sample paths $M$. Specifically,
+%
+\begin{align}
+    \label{eq:dual-mc-approx}
+    z(t,x,v) \approx \sum_{m=1}^{M} \Bigg( &u(T,X_T^{(m),t,x},V_T^{(m),t,v})\\
+     &+ \int_t^T d_T(s,X_s^{(m),t,x},V_s^{(m),t,x}) - u(s,X_s^{(m),t,x},V_s^{(m),t,x}) ds \Bigg). 
+\end{align}
+%
+This approximation converges at a rate proportional to $\frac{1}{\sqrt{M}}$, by the law of large numbers. 
+
+As we cannot (in general) write down a closed-form expression for the solution to the SDE \autoref{eq:model-sde}, we also need to formulate a discretised approximation of the solution, which we can use to simulate the sample paths needed for the approximation of the expectation. For example, the Euler-Maruyama scheme for \autoref{eq:model-sde} is given by
+%
+\begin{align}
+    X_{n+1} &= X_n + V_n \Delta t \\
+    V_{n+1} &= V_n - a(V_n)\Delta t + \sigma \Delta W_n \\
+    X_0 &= x, V_0 = v,
+\end{align}
+%
+where we define the constant time step $\Delta t = T/N$, and $W_n$ denotes the Brownian increment
+%
+\begin{align} 
+    W_n := W((n+1)\Delta t) - W(n\Delta t) \sim \mathcal{N}(0,\Delta t).
+\end{align}
+%
+
+Finally, when applying these discretisation schemes in an implementation of the iterative algorithm proposed above, we need to consider how to evaluate the source terms and initial/terminal conditions. When solving \autoref{eq:primal-iteration} to obtain $u^{(k)}$ we simply need to know the values of $z^{(k-1)}$ at grid points. By using the same grid for solving the primal and dual equations, and storing the solution $z^{(k-1)}$, we can be sure to already have all the neccessary values.
+
+On the other hand, when solving \autoref{eq:dual-iteration} using a Monte Carlo approach, we need to evaluate $u^{(k)}(t,x,v)$ at arbitrary points $(x,v)$, since we evaluate at the random points $(X_s^{(t,x)},V_s^{(t,v)})$. To evaluate $u^{(k)}$ between grid points in $x$ and $v$, we will simply linearly interpolate between the values at grid points.
+We note that it is enough to be able to evaluate $u^{(k)}$ at grid points (rather than arbitrary points) in $t$, since the time variable remains deterministic. By choosing the same time discretisation for the dual equation as for the primal, we can ensure that the required points in time align with the grid points of the stored solution $u^{(k)}$. 
+
+Finally, we also need to compute the integral with respect to time in \autoref{eq:dual-mc-approx}. For simplicity, we divide this into two integrals, both of which we compute using a midpoint Riemann sum. First,
+%
+\begin{align}
+    \int_{t_i}^{T} u^{(k)}\big(s,X_s^{t,x},V_s^{t,v}\big) ds = \sum_{j=i}^{N-1} \frac{\Delta t}{2} \bigg(u^{(k)}\big(t_j,X_{t_j}^{t_i,x},V_{t_j}^{t_i,x}\big) + u^{(k)}\big(t_{j+1},X_{t_{j+1}}^{t_i,x},V_{t_{j+1}}^{t_i,x}\big)\bigg),
+\end{align}
+% 
+where we note that it is only neccessary to compute the integral starting from a gridpoint $t_i$, since we have chosen the same time discretisation for the primal and dual equations. We also note that by making this choice, no additional error is introduced by replacing the integral by a Riemann sum. In fact, the sum is exactly equal to the integral defined by $u^{(k)}$ on grid points, and linearly interpolated between them. 
+
+Second we have
+%
+\begin{align}
+    \int_{t_i}^{T} d_T(s,X_s^{t,x},V_s^{t,v}) ds \approx \sum_{j=i}^{N-1} \frac{\Delta t}{2} \bigg( d_T\big(t_j,X_{t_j}^{t_i,x},V_{t_j}^{t_i,v}\big) + d_T\big(t_{j+1},X_{t_{j+1}}^{t_i,x},V_{t_{j+1}}^{t_i,v}\big) \bigg).
+\end{align}
+%
+In this case, the Riemann sum is an approximation of the integral, since the function $d_T(t,x,v)$ is the target dose, defined without interpolation.
 
 % \bibliographystyle{plain}
 % \bibliography{bibliography.bib}
