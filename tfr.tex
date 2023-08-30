@@ -20,6 +20,9 @@ Things to write:
     \item Convergence of approximation (twofold x 2): Does the iterative scheme converge when soln's to the sequence of PDEs are exact? I.e. $u^{(k)} \rightarrow u^{(*)}$? And is $u^{(*)}$ the right thing? Furthermore, does the iterative scheme converge (and to the right thing) when the soln's to the sequence of PDEs are approximated numerical sol'ns?
     \item Results of numerical experiments
     \item Future extensions of this model/framework: Model for radiation in multiple spatial dimensions (now just 1D), better/more accurate discretisation schemes e.g. SSP, MLMC, higher order in general?
+    \item another future work thing: figure out how to parallelize the MC code?
+    \item Motivation for the SSP methods for FBSDE: iterating through numerically solving each PDE in sequence, we want to make sure error is not propagated / does not grow? (Also motivation for FBSDE framework is to deal with the nonlinearity that arises when a different norm is chosen for the optimisation problem)
+    \item Write about how BCs on the dual ($z$) are implemented in the Monte Carlo simulations
 \end{itemize}
 
 \section{Theory}
@@ -583,13 +586,13 @@ with boundary conditions
         {u \rvert}_{\partial \Omega} &= 0\\
         {z \rvert}_{\partial \Omega} &= 0\\
         u(0,x,v) &= f_0(x,v)\\
-        z(T,x,v) &= u(T,x,v),
+        z(T,x,v) &= 0,
     \end{cases} 
 \end{align}
 %
 where the equation for $u$ is forward in time, and the equation for $z$ is backward in time. 
 
-Since the solution of the primal equation depends on the solution of the dual equation and vice versa, and the starting value of $z$ at time $T$ depends on the terminal value of $u$, we will need to take an iterative approach, numerically solving the primal equation first, using that numerical solution as input into the numerical scheme for the dual equation, etc. The overall structure of the iterative procedure will be as follows:
+Since the solution of the primal equation depends on the solution of the dual equation and vice versa, we will take an iterative approach, numerically solving the primal equation first, using that numerical solution as input into the numerical scheme for the dual equation, etc. The overall structure of the iterative procedure will be as follows:
 
 % \begin{enumerate}
 %     \item Initialize $u$ as $f_0(x,v)$ and solve the equation for $u$ with no source term, forward in time up to $t=T$.
@@ -611,7 +614,7 @@ Since the solution of the primal equation depends on the solution of the dual eq
     \begin{align} 
         \begin{cases} 
             &\partial_t z^{(0)} + \vecbf{b} \cdot \nabla z^{(0)} + \div{(\vecbf{A} \nabla z^{(0)})} = u^{(0)} - d_T\\
-            &z^{(0)}(T,x,v) = u^{(0)}(T,x,v)
+            &z^{(0)}(T,x,v) = 0
         \end{cases}
     \end{align}
     and obtain its solution $z^{(0)}(t,x,v)$.
@@ -631,7 +634,7 @@ Since the solution of the primal equation depends on the solution of the dual eq
             \label{eq:dual-iteration}
             \begin{cases}
                 &\partial_t z^{(k)} + \vecbf{b} \cdot \nabla z^{(k)} + \div{(\vecbf{A} \nabla z^{(k)})} = u^{(k)} - d_T\\
-                &z^{(k)}(T,x,v) = u^{(k)}(T,x,v)
+                &z^{(k)}(T,x,v) = 0
             \end{cases} 
         \end{align} 
         and obtain its solution.
@@ -721,8 +724,8 @@ where $\vecbf{B}$ and $\vecbf{C}$ are matrices of size $M^2 \cross M^2$, and $\v
 \begin{align} 
     \begin{cases} 
         B_{k,k} &= 1 + \sigma^2 \frac{\Delta t}{(\Delta v)^2}\\
-        B_{k,k+1} &= - \frac{\sigma^2}{2},\text{ unless } k \equiv 0 \mod M\\ 
-        B_{k,k-1} &= - \frac{\sigma^2}{2},\text{ unless } k \equiv 1 \mod M
+        B_{k,k+1} &= - \frac{\sigma^2}{2} \frac{\Delta t}{(\Delta v)^2},\text{ unless } k \equiv 0 \mod M\\ 
+        B_{k,k-1} &= - \frac{\sigma^2}{2} \frac{\Delta t}{(\Delta v)^2},\text{ unless } k \equiv 1 \mod M
     \end{cases}
 \end{align}
 %
@@ -771,7 +774,7 @@ This equation gives the procedure for stepping one step forward in time, so to g
 which corresponds to the condition 
 %
 \begin{align}
-    \frac{\Delta t}{(\Delta v)^2} > 1 - \frac{1}{\sigma^2}.
+    \sigma^2 \frac{\Delta t}{(\Delta v)^2} < 1 + \sigma^2 \frac{\Delta t}{(\Delta v)^2}.
 \end{align}
 %
 
@@ -782,7 +785,7 @@ Considering the dual equation in \autoref{eq:coupled-pdes}, we see that it can b
 \begin{align} 
     \label{eq:dual-eqn}
     &\partial_t z + \mathcal{L} z + d_T - u = 0 \\
-    &z(T,x,v) = u(T,x,v)
+    &z(T,x,v) = 0
 \end{align}
 %
 with the differential operator $\mathcal{L}$ being of the form
@@ -837,7 +840,7 @@ ds
 Using the process $Y_t$, we can now write down a probabilistic representation of the solution to the dual equation \autoref{eq:dual-eqn} as
 %
 \begin{align}
-    z(t,x,v) = \mathbb{E} \bigg[ u(T,X_T^{t,x},V_T^{t,v}) + \int_t^T d_T(s,X_s^{t,x},V_s^{t,x}) - u(s,X_s^{t,x},V_s^{t,x}) ds \bigg],
+    z(t,x,v) = \mathbb{E} \bigg[\int_t^T d_T(s,X_s^{t,x},V_s^{t,x}) - u(s,X_s^{t,x},V_s^{t,x}) ds \bigg],
 \end{align}
 %
 where $X_s^{t,x}$ denotes the stochastic process $X_s$ at time $s$, started at the initial value $x$ at time $t<s$.
@@ -846,8 +849,7 @@ To compute an approximation of $z$ using this probabilistic representation, we n
 %
 \begin{align}
     \label{eq:dual-mc-approx}
-    z(t,x,v) \approx \sum_{m=1}^{M} \Bigg( &u(T,X_T^{(m),t,x},V_T^{(m),t,v})\\
-     &+ \int_t^T d_T(s,X_s^{(m),t,x},V_s^{(m),t,x}) - u(s,X_s^{(m),t,x},V_s^{(m),t,x}) ds \Bigg). 
+    z(t,x,v) \approx \sum_{m=1}^{M} \int_t^T d_T(s,X_s^{(m),t,x},V_s^{(m),t,x}) - u(s,X_s^{(m),t,x},V_s^{(m),t,x}) ds . 
 \end{align}
 %
 This approximation converges at a rate proportional to $\frac{1}{\sqrt{M}}$, by the law of large numbers. 
@@ -887,6 +889,66 @@ Second we have
 \end{align}
 %
 In this case, the Riemann sum is an approximation of the integral, since the function $d_T(t,x,v)$ is the target dose, defined without interpolation.
+
+\section{Structure of report}
+NB: Need more references: 
+
+\begin{itemize}
+    \item Ref for the PDE constrained optimisation problem (and the iterative scheme for $(u^{(k)},z^{(k)})$) needed
+    \item Reuse refs from reading course report 
+    \item Some ref for physics-y bits? Or medical bits?
+    \item We have a few refs for Monte Carlo stuff e.g. Gobet, Oksendal, Klebaner
+    \item Also the SSP FBSDE paper (already in refs here)
+\end{itemize}
+
+\subsection{Introduction}
+\begin{itemize}
+    \item Introduce context and motivation 
+    \item Describe structure of report
+\end{itemize}
+
+\subsection{Background}
+\begin{itemize}
+    \item Motivation: radiotherapy treatment 
+    \item Different kinds of radiation (and how they interact with matter) 
+    \item Maybe some maths / intro explanantion of problem formulation and description of eqn for radiation behaviour?
+\end{itemize}
+
+\subsection{Theory}
+A lot of this is already written above.
+\begin{itemize}
+    \item Derivation of coupled PDE system from constrained optimisation problem 
+    \item Relevant Feynman-Kac formulae 
+    \item Extension to different norm for optimisation problem + relation of resulting eqns to nonlinear Feynman-Kac formulae
+\end{itemize}
+
+\subsection{Numerical methods}
+A lot of this is also already written above.
+\begin{itemize}
+    \item Iterative scheme for solving sequence of PDEs (resulting in $(u^{(k)},z^{(k)})$)
+    \item Finite difference scheme for $u^{(k)}$
+    \item Monte Carlo methods + Euler-Maruyama scheme + integral approximation for $z^{(k)}$
+    \item Linear interpolation of numerical solutions
+\end{itemize}
+
+\subsection{Numerical results}
+\begin{itemize}
+    \item Introduce example problem (target = sol to forward/primal eqn with a known source/forcing $g$)
+    \item Convergence plots (both "relative" error $u^{(k)} - u^{(k-1)}$ and "absolute" error $u^{(k)}-u^{(*)}$)
+    \item Plots showing comparison of target sol and actual obtained sol (snapshots in time)
+\end{itemize}
+
+\subsection{Future work}
+\begin{itemize}
+    \item Show convergence of $(u^{(k)},z^{(k)})$ to the true solution $(u^{(*)},z^{(*)})$
+    \item Extend our model to multiple dimensions in space 
+    \item Implement/find/come up with better numerical methods: e.g. Strong stability Preserving (SSP) methods, Multilevel Monte Carlo (MLMC), and maybe parallelize the Monte Carlo code (each "point" (t,x,v) could be run in parallel?)
+\end{itemize}
+
+\subsection{Conclusions}
+\begin{itemize}
+    \item Summarize results and future work directions?
+\end{itemize}
 
 % \bibliographystyle{plain}
 % \bibliography{bibliography.bib}
