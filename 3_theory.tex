@@ -1,0 +1,425 @@
+\section{Theory}
+A lot of this is already written below.
+\begin{itemize}
+    \item Derivation of coupled PDE system from constrained optimisation problem 
+    \item Relevant Feynman-Kac formulae 
+    \item Extension to different norm for optimisation problem + relation of resulting eqns to nonlinear Feynman-Kac formulae
+    \item ((Why does $z$ work in MC framework but not $u$?))
+    \item Motivation for hybrid methods: it's not been done before, and not for this application. Idea: speed up treatment planning! 
+    \item FC formulae for boundary value problems
+    \item Add conditions for FC formulae to hold??
+\end{itemize}
+
+\subsection{Modelling radiation transport}
+In this section, we describe a simple model for the evolution of radiation in a domain. Specifically, we are interested in approximately describing the behaviour of protons. On a microscopic level, as individual protons travel through space in a material, they interact with the atoms in the medium in a few different ways. These interactions govern the continuing movement of the protons, e.g. how their direction and speed of movement changes, and if and when they come to a stop inside the medium. Specifically, proton interactions with matter can be dividied into three categories. First, nonelastic collisions with the nuclei of the atoms in the medium and second, elastic scattering off of the nuclei. Third, we have inelastic Coulomb interactions between the protons and the electrons of the atoms in the medium, due to the positive charge of the protons and negative charge of the electrons. In the simplified model considered here, we capture the elastic scattering and the Coulomb interaction, but assume that the nonelastic collisions between protons and atomic nuclei happen rarely enough that we can ignore them. 
+
+For simplicity we consider a one-dimensional domain in space. In this case, the radiation intensity $u(t,x,v)$ as a function of time $t$, position $x$, and velocity $v$ can be described by the PDE
+%
+\begin{align}
+    \label{eq:pde-model}
+    \partial_t u + v \partial_x u - \frac{\sigma^2}{2} \partial_v^2 - \partial_v \big( a(v) u\big) = g(t,x,v),
+\end{align}
+%
+where the $\partial_x$ term describes transport through space, the $\partial_v$ term describes energy depletion, and the $\partial_v^2$ term describes the elastic scattering. The function $g$ is a source term, describing the input of additional radiation into the domain. 
+
+Protons moving through a medium do not slow down linearly. Instead, they deposit very little energy when moving at high velocities, and much more when moving at low velocities, meaning that their velocities change more rapidly once they start slowing down. By choosing the function $a(v)$ to be a rapidly decreasing function of $v$, we are able to capture this behaviour in our model. For example, we might choose $a(v) = e^{-cv}$ for some constant $c$.
+
+Another description of radiation transport can be formulated in terms of SDEs describing the evolution of the position $X_t$ and velocity $V_t$ of an individual proton, where $X_t$ and $V_t$ are Itô processes obeying the equations
+%
+\begin{align} 
+    \label{eq:sde-model}
+    X_t &= x_0 + \int_{0}^{t} V_s ds\\ 
+    V_t &= v_0 - \int_{0}^{t} a(V_s) ds + \int_{0}^{t} \sigma dW_s.
+\end{align}
+%
+In fact, in the case when $g=0$, the solution to \autoref{eq:pde-model} is the probability density function of $(X_t,V_t)$. In other words, we could think of \autoref{eq:pde-model} as describing the overall (macroscopic) behaviour of radiation through space, whilst \autoref{eq:sde-model} describes the (microscopic) behaviour of individual particles. In later subsections, we will discuss this type of connections between PDEs and SDEs, through so-called Feynman-Kac formulae, in more detail.
+
+\subsection{Treatment planning as a PDE constrained optimisation problem}
+
+% - PDE constrained optimisation problem 
+
+% - Introduce our special case model
+
+% - But, what norm do we use? Introduce Bochner spaces (and this particular one also has an inner product, which is important)
+
+% - Write down the Lagrangian
+
+% - Functional derivatives = zero yields three equations, which become the two coupled PDEs
+
+% - Comment on how the problem would change if we changed the norm we're minimising in?
+
+% - Radiotherapy: interested in the dose / energy deposited as a function of space/depth. Obtained by integrating $u$ over time and velocity.
+
+% - Treatment planning: want to find the best way to give the desired dose to tumour (whilst sparing the surrounding area), and using as low an amount of radiation as possible whilst still reaching target dose on tumour --> PDE constrained optimisation problem 
+
+% - For simplicity we consider a target radiation intensity instead of a target dose
+
+% - Explain in more detail about PDE constrained optimisation
+
+% - Explain in more detail the derivation of the Lagrangian maybe?
+
+% - If we choose a different norm we get a different PDE - specifically a different source term in the dual equation
+
+
+In the context of radiotherapy treatment, we are interested in the total amount of energy deposited as a function of depth in the tissue. This quantity is also called the radiation dose, and is obtained from the radiation intensity $u(t,x,v)$ by integrating over time and velocity. When treating a tumour, we want to expose the tumour to a sufficient dose of radiation, whilst sparing the healthy tissue surrounding the tumour as much as possible. We also want the total radiation exposure to be as low as possible, whilst still delivering a high enough dose to the tumour. 
+
+We can formulate the task of treatment planning as a constrained optimisation problem, where we want to minimise the norm of the difference between the target dose and the achieved dose with a given source. The constraint consists of our PDE model describing the evolution of radiation intensity in the domain. To simplify the mathematical problem formulation, we will seek to minimise the difference between a target radiation intensity and the achieved radiation intensity.
+
+As before, we let $u$ denote the radiation intensity in the domain. Letting $d_T$ denote the target intensity, we seek the radiation intensity $u$ and source $g$ that gives
+%
+\begin{align} 
+    \label{eq:to-minimise}
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+\end{align}
+%
+for some constant $\alpha$, and subject to the constraint
+%
+\begin{align}
+    \label{eq:pde-constraint}
+    &\partial_t u + \div{(\vecbf{b} u - \vecbf{A} \nabla u)} = g\\
+    &{u \rvert}_{\partial \Omega} = 0\\
+    & u(0,x,v) = f_0(x,v)
+\end{align}
+%
+where 
+%
+\begin{equation}
+    \vecbf{b} = 
+    \begin{pmatrix}
+        &v\\
+        &-a(v)
+    \end{pmatrix},
+    \vecbf{A} = 
+    \begin{pmatrix}
+        &0 &0\\
+        &0 &\frac{\sigma^2}{2}
+    \end{pmatrix},
+    \end{equation}
+    %
+so that we recover the PDE of \autoref{eq:pde-model}. We have also specified a zero boundary condition in $x$ and $v$, and a (potentially nonzero) initial condition $f_0(x,v)$. Since we are only considering one spatial dimension, our problem has a total of two dimensions in addition to time, i.e. $u(t,x,v): [0,T] \cross \Omega \rightarrow \mathbb{R}$ and the domain $\Omega=\mathbb{R}\cross\mathbb{R}$ is two-dimensional, with one dimension being position and the other velocity. We note that the constant $\alpha$ here functions as a regularisation parameter, whose value will need to be chosen appropriately for a numerical optimisation algorithm to converge. By chosing a larger $\alpha$, we penalise a large source $g$ more, whilst a smaller $\alpha$ corresponds to less of a penalty.
+
+So far, we have formulated this optimisation problem without specifying which norm is used in \autoref{eq:to-minimise}. An intuitive choice may be the $L^2$ norm over the domain $\Omega$, but if we choose this norm we haven't taken into account the time dependence of $u$. With this in mind, we introduce the more general concept of a Bochner space $L^p(T;X)$ and the corresponding norm
+%
+\begin{align} 
+    {\lVert (\cdot) \rVert}^p_{L^p(T,X)} := \int_{T} {\lVert (\cdot)\rVert}^p_X dt, 
+\end{align}
+%
+where $X$ is a Banach space with corresponding norm ${\lVert \cdot\rVert}_X$. Specifically, we choose the case where $T$ is a time interval and $X=L^2(\Omega)$. A suitable choice for the norm for the minimisation problem \autoref{eq:to-minimise} is then the following;
+%
+\begin{align} 
+    \lVert f \rVert_{L^2([0,T];L^2(\Omega))}^2 &:= \int_{0}^{T}  {\lVert f \rVert}^2_{L^2(\Omega)} dt\\
+    &= \int_{0}^{T} \int_{\Omega} f^2 d\Omega dt.\\
+\end{align}
+%
+We note that the space $L^2([0,T];L^2(\Omega))$ additionally has an inner product, namely
+%
+\begin{align} 
+    \innerprod{f}{g}_{L^2(T;L^2(\Omega))} &:= \int_{0}^{T} \innerprod{f}{g}_{L^2(\Omega)} dt \\
+    & = \int_{0}^{T} \int_{\Omega} fg d\Omega dt.
+\end{align}
+%
+This inner product will be used in what follows.
+
+We now proceed to treat the minimisation problem, using the method of Lagrange multipliers. First, we formulate the Lagrangian function for the optimisation problem specified by \autoref{eq:to-minimise} and \autoref{eq:pde-constraint}. Then, we take generalised derivatives of the Lagrangian function and set these to zero. Finally, from the resulting equations we obtain a set of two coupled PDEs.
+
+Letting $\lVert \cdot \rVert$ and $\innerprod{\cdot}{\cdot}$ denote the norm and inner product in $L^2([0,T];L^2(\Omega))$, the Lagrangian function is given by
+%
+\begin{align} 
+    \mathcal{L}(u,g,z) := \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2 - \innerprod{u}{\partial_t z} - \innerprod{u}{\vecbf{b} \cdot \nabla z} + \innerprod{\nabla u}{\vecbf{A} \nabla z} - \innerprod{g}{z}.
+\end{align}
+%
+The function $u$ is the function that we seek in the minimisation problem, $g$ is the source term from the constraining PDE, and $z$ is another function known as the Lagrange multiplier, which is introduced to capture the constraint. 
+
+By taking generalised (functional) derivatives of $\mathcal{L}$ with respect to $u$,$z$, and $g$ we obtain the following;
+%
+\begin{align} 
+    D_u \mathcal{L}[\phi] &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \vecbf{b}\cdot\nabla z + \vecbf{A} \nabla z \cdot \nabla \phi \Big) d\Omega dt\\
+    &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \vecbf{b}\cdot\nabla z + \div{(\vecbf{A} \nabla z)} \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_z\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \phi \partial_t u + \div{(\vecbf{b}u)} \phi - \div{(\vecbf{A} \nabla u)} \phi - g \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_g\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \alpha g \phi - z \phi \Big) d\Omega dt,
+\end{align}
+%
+where $\phi = \phi(t,x,v) \in C^{\infty}_{0}$ is any test function which is infinitely continously differentiable and zero on the boundary of the integration domain.
+
+By requiring $D_u \mathcal{L}[\phi]=D_z \mathcal{L}[\phi]=D_g \mathcal{L}[\phi]=0$ and applying the fundamental theorem of calculus of variations, we get a PDE for $z$;
+%
+\begin{align} 
+    - \partial_t z - \vecbf{b} \cdot \nabla z - \div{(\vecbf{A} \nabla z)} + (u - d_T) = 0,
+\end{align}
+% 
+a PDE for $u$;
+%
+\begin{align} 
+    \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} - g = 0,
+\end{align}
+%
+which we note recovers the constraint \autoref{eq:pde-constraint}, and finally a relationship between $z$ and $g$;
+%
+\begin{align}
+    \alpha g - z = 0. 
+\end{align}
+%
+Putting these three equations together, we obtain the coupled PDEs 
+%
+\begin{align} 
+    \label{eq:coupled-pdes}
+    \begin{cases} 
+        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= \frac{1}{\alpha} z\\
+        \partial_t z + \vecbf{b} \cdot \nabla z + \div{(\vecbf{A} \nabla z)} &= u - d_T,
+    \end{cases}
+\end{align}
+%
+where the source term of the equation for $u$ depends on $z$, and vice versa.
+
+The boundary condition ${u \rvert}_{\partial \Omega} = 0$ on $u$ is inherited by $z$. We can see that this is a sensible choice by considering the derivation of the weak formulation of the PDE obeyed by $u$.
+
+In terms of boundary contidions in $t$, we have an initial condition on $u$; $u(0,x,v)=f_0(x,v)$ for some function $f_0(x,v)$ and a terminal condition on $z$; $z(T,x,v)=0$. The initial condition on $u$ and terminal condition on $z$ make it natural to solve $u$ forward in time and $z$ backward in time when considering the coupled problem numerically. We can see that imposing a zero terminal condition on $z$ makes sense by considering \autoref{eq:coupled-pdes}, and the case where $u=d_T$. In this case, if $z(T,x,v)=0$, the solution to the dual equation is given by $z(t,x,v)=0$, and $u$ solves the primal equation with a zero source term. 
+
+We note that choosing a different norm for the optimisation problem would affect the form of \autoref{eq:coupled-pdes}. For example, we could choose to minimise the difference between $u$ and $d_T$ in the $L^p([0,T],L^p(\Omega))$-norm for some integer $p\neq 2$ instead. Specifically, we might then seek the $u$ and $g$ which minimise the expression 
+%
+\begin{align} 
+    \frac{1}{p} {\lVert u - d_T \rVert}^p_{L^p([0,T],L^p(\Omega))} + \frac{\alpha}{p} {\lVert g \rVert}^p_{L^p([0,T],L^p(\Omega))}.
+\end{align}
+%
+In this case, we would get the coupled PDEs 
+%
+\begin{align} 
+    \label{eq:nonlinear-pde-system}
+    \begin{cases} 
+        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= {\Big(\frac{z}{\alpha} \Big)}^{\frac{1}{p-1}} \\
+        \partial_t z + \vecbf{b} \cdot \nabla z + \div{(\vecbf{A} \nabla z)} &= {\big(u - d_T\big)}^{p-1},
+    \end{cases}
+\end{align}
+%
+where we note that both the primal and dual equation now have nonlinear source terms. 
+
+In this report, we focus on the optimisation problem in the $L^2([0,T],L^2(\Omega))$-norm, where the resulting coupled PDEs are linear. However, we present this extension here, and cover some numerical methods for this general case in later sections, as a potential avenue for future work.
+
+\subsection{Forward SDE and linear Feynman-Kac formula}
+
+In this section, we delve into more detail regarding the connections that can be made between PDEs and SDEs through Feynman-Kac formulae. Here, we focus on the case of linear PDEs, whilst we cover nonlinear Feynman-Kac formulae in the following section. This treatment follows that of \cite{gobet2016monte}, where proofs of many of the stated formulae can be found. 
+
+Let $b:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^d$, $\sigma:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^{d \times d}$, and $W_t$ a $d$-dimensional Brownian motion. Consider the $d$-dimensional SDE
+%
+\begin{align}
+    \label{eq:gen-sde}
+X_t = x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s
+\end{align}
+%
+describing the Itô process $X_t$. 
+
+The infinitesimal generator of $X_t$ is the differential operator defined by 
+%
+\begin{align} 
+    \mathcal{L}f(x) = \lim_{t\rightarrow 0} \frac{\mathbb{E}_x[f(X_t)]-f(x)}{t},
+\end{align}
+%
+and is given by
+%
+\begin{align}
+    \label{eq:generator-operator}
+    \mathcal{L} = \frac{1}{2} \sum_{i,j=1}^d [\sigma \sigma^T]_{i,j}(t,x) \partial_{x_i,x_j}^2 + \sum_{i=1}^d b_i(t,x) \partial_{x_i}.
+\end{align}
+%
+
+Below, we describe the connection between a PDE involving this differential operator, and the solution to the SDE \autoref{eq:gen-sde}, yielding a probabilistic representation of the solution to the PDE. We consider the terminal value problem
+%
+\begin{align}
+    \label{eq:backward-pde}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) - k(t,x)u(t,x) + g(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x).
+    \end{cases}
+\end{align}
+%
+We note that the probabilistic convention is to formulate this problem as a terminal value problem, as we have done here. However, the PDE convention would be to instead formulate it as an initial value problem. These two formulations are equivalent under a time-reversal $t \mapsto T-t$, as is discussed in \cite{gobet2016monte}. 
+
+Under some conditions on the functions $f, g, k$ as well as on $b$ and $\sigma$, and provided that the solution $u$ to \autoref{eq:backward-pde} exists and is sufficiently regular, we can represent $u(t,x)$ through a so-called Feynman-Kac formula. Specifically, the following conditions are sufficient:
+
+\begin{enumerate}
+    \item $b(t,x)$ and $\sigma(t,x)$ are continous functions satisfying the following conditions for some constant $C$: \begin{enumerate}
+        \item $\lvert b(t,x) - b(t,y) \rvert + \lvert \sigma(t,x) - \sigma(t,y) \rvert \leq C \lvert x - y \rvert \quad \forall (t,x,y) \in [0,T]\cross \mathbb{R}^d \cross \mathbb{R}^d$
+        \item $ \sup_{0\leq t \leq T} \lvert b(t,0) \rvert + \lvert \sigma(t,0) \rvert \leq C$
+    \end{enumerate}
+    \item The functions $f:\mathbb{R}^d \rightarrow \mathbb{R}$, $g,k : [0,T]\cross \mathbb{R}^d \rightarrow \mathbb{R}$ are all continuous and fulfill the following:
+    \begin{align} 
+        \sup_{x \in \mathbb{R}^d} \frac{\lvert f(x) \rvert}{1 + {\lvert x \rvert} ^2} + \sup_{0 \leq t \leq T, x \in \mathbb{R}^d} \frac{\lvert g(t,x) \rvert}{1 + {\lvert x \rvert}^2} + \lvert k(t,x) \rvert < + \infty.
+    \end{align}
+    \item The solution $u$ to the boundary value problem \autoref{eq:backward-pde} exists and is continously differentiable once in $t$ and twice in $x$.
+    \item $u(t,x)$ is continous on the domain $[0,T]\cross\mathbb{R}^d$ and satisfies 
+    \begin{align} 
+        \sup_{0\leq t \leq T, x \in \mathbb{R}^d} \frac{\lvert u(t,x) \rvert}{1 + {\lvert x \rvert}^2} < + \infty.
+    \end{align}
+\end{enumerate}
+In summary, condition 1 arrures the existence and uniqueness of the solution to the SDE \autoref{eq:gen-sde}, whilst conditions 2 and 4 are conditions on the growth of $f,g,k$ and $u$ respectively. Condition 3 dictates that the solution $u$ to the terminal value problem must exist and be sufficiently regular.
+
+Provided that these conditions are fulfilled, $u(t,x)$ is given by the Feynman-Kac formula
+%
+\begin{align}
+    \label{eq:linear-fc} 
+    u(t,x) = \mathbb{E}\bigg[ f\big( X_T^{t,x} \big) e^{-\int_t^T k(r,X_r^{t,x})dr} + \int_t^T g(s,X_s^{t,x}) e^{-\int_t^s k(r,X_r^{t,x})dr}ds\bigg].
+\end{align} 
+%
+Here $X_T^{t,x}$ denotes the stochastic process $X$ at time $T$, started at $x$ at time $t$. For a proof of this, see e.g. \cite{gobet2016monte}.
+
+We have now formulated a probabilistic representation of \autoref{eq:backward-pde}, which is a terminal value problem, but exists in an infinite domain $\mathbb{R^d}$ in space. If we are instead considering the same PDE but on a bounded domain in space, we must also specify a boundary condition in $x$, and the probabilistic representation changes slightly.
+
+Consider the boundary value problem
+%
+\begin{align}
+    \label{eq:general-bvp}
+    \begin{cases}
+        &\partial_t u(t,x) + \mathcal{L}u(t,x) - k(t,x)u(t,x) + g(t,x) = 0, \quad t<T,x \in \Omega, \\
+        &u(T,x) = f(T,x), \quad x \in \Omega \\ 
+        &u(t,x) = f(t,x), \quad (t,x) \in [0,T[\cross \partial\Omega.
+    \end{cases}
+\end{align}
+%
+To write down its probabilistic representation we must first define the first exit time from the domain $\Omega$. The first exit time $\tau^{t,x}$ of the process $X^{t,x}$ (started at time $t$ at position $x$) from the domain $\Omega$ is given by $\tau^{t,x} = \inf{\{ s > t : X^{t,x}_s \notin \Omega \}}$. We note that the first exit time $\tau^{t,x}$ is a random variable -- if we consider different individual realisations of $X_s^{t,x}$, $\tau^{t,x}$ will take different values depending on the exact path of $X_s^{t,x}$. 
+
+For the probabilistic representation of the solution to the boundary value problem \autoref{eq:general-bvp} to exist, the conditions listed above for the terminal value problem should be modified slightly. It is sufficient to require the following:
+
+\begin{enumerate}
+    \item The conditions on $b$ and $\sigma$ required for the existence and uniqueness of the solution to the SDE hold as above.
+    \item The boundary $\partial \Omega$ of the spatial domain is smooth and it holds that 
+    \begin{align} 
+        \forall t \in [0,T], \forall x \in \partial \Omega, \quad \mathbb{P}(\tau^{t,x}=t) = 1, 
+    \end{align}
+    i.e. if the process $X^{t,x}$ is started at time $t$ at a point $x$ on the boundary of the domain, the first exit time $\tau^{t,x}$ is the starting time $t$.
+    \item The functions $f,g,k : [0,T] \cross \Omega \rightarrow \mathbb{R}$ are continuous.
+    \item The solution $u$ to the boundary value problem exists, is continous, and is continuosly differentiable once in $t$ and twice in $x$.
+\end{enumerate}
+We note that the growth conditions on $f,g,k$ and $u$ that were needed previously are not required in this case, where we have a bounded domain $\Omega$.
+
+Denoting $\min{(t,s)} = t \wedge s$, the probabilistic representation of the solution to \autoref{eq:general-bvp}, which exists under the conditions listed above, is given by
+%
+\begin{align} 
+    \label{eq:linear-fc-bvp}
+    u(t,x) = \mathbb{E} \bigg[ &f\big(\tau^{t,x} \wedge T , X^{t,x}_{\tau^{t,x}\wedge T}\big) e^{-\int_t^{\tau^{t,x}\wedge T} k(r,X^{t,x}_r) dr}\\
+    & + \int_t^{\tau^{t,x}\wedge T} g(s,X^{t,x}_s) e^{-\int_t^s k(r,X^{t,x}_r) dr} ds \bigg].
+\end{align}
+%
+There are two main differences between this representation and \autoref{eq:linear-fc}. Firstly, the function $f(x)$ specifying the terminal condition has been generalised to a function $f(t,x)$ specifying both the terminal and boundary conditions. Secondly, anywhere the terminal time $T$ featured in the first formula, it has been replaced by the minimum of $T$ and the time $\tau^{t,x}$ at which $X^{t,x}$ first hits the boundary of the domain.
+
+As it will prove useful later, we also write down a special case of \autoref{eq:linear-fc-bvp}, namely the case where $k=0$ and we also have a zero boundary and terminal condition, $f(t,x)=0$ for all $(t,x)$. In this case, the probabilistic representation of $u(t,x)$ is simply given by
+%
+\begin{align} 
+    u(t,x) = \mathbb{E} \bigg[ \int_t^{\tau^{t,x}\wedge T} g(s,X^{t,x}_s) ds \bigg].
+\end{align}
+%
+We note that the zero boundary condition on $u(t,x)$ corresponds to killing $X_s^{t,x}$ once it hits the boundary of the domain, $\partial \Omega$.
+
+Finally, we make a connection betwen the SDE \autoref{eq:gen-sde} and another PDE, which describes the probability distribution of $X_s^{t,x}$, and sketch a possible Feynman-Kac representation of its solution. First, we note that a special case of \autoref{eq:linear-fc}, when $k=0,g=0$, gives the solution to the Kolmogorov backward equation (with terminal condition),
+%
+\begin{align}
+    \label{eq:kolmogorov-backward}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x),
+    \end{cases}
+\end{align}
+%
+is given by 
+%
+\begin{align}
+    u(t,x) = \mathbb{E}\big[ f(X_T^{t,x}) \big]. 
+\end{align} 
+% 
+The adjoint of the Kolmogorov backward equation is the Kolmogorov forward equation
+%
+\begin{align} % sign?
+    \label{eq:kolmogorov-forward}
+    \partial_s p(s,y) - \mathcal{L}^{*}p(s,y) = 0,
+\end{align}
+%
+where the differential operator $\mathcal{L}^{*}$ is the adjoint of $\mathcal{L}$, given by
+%
+\begin{align}
+    \label{eq:adjoint-operator}
+     \mathcal{L}^{*} = \frac{1}{2} \sum_{i,j=1}^{d} \partial_{y_i,y_j} [\sigma \sigma^T]_{i,j}(s,y) - \sum_{i=1}^{d} \partial_{y_i}b_i(s,y).
+\end{align} 
+%
+% is the IC at time zero or time t? Probably zero...
+The Kolmogorov forward equation (with initial condition $p(0,y)=\delta(y-x)$) describes the probability distribution of the stochastic process $X_t$ that solves the SDE in \autoref{eq:gen-sde}. We can obtain a Feynman-Kac type formula for the density function $p(s,y)$ (assuming that $X_t$ admits a density), by noting that
+%
+\begin{align} 
+    \mathbb{E}[f(X_T^{t,x})] = \int p_{x,t}(T,z)f(z)dz 
+\end{align}
+%
+Hence,
+%
+\begin{align}
+    p(T,y) = \mathbb{E}[\delta({X_T^{t,x} - y})] = \int p_{t,x}(T,z)\delta({z-y})dz, 
+\end{align} 
+%
+or more generally
+%
+\begin{align}
+    p(s,y) = \mathbb{E}[\delta({X_s^{t,x} - y})] = \int p_{t,x}(s,z)\delta({z-y})dz.
+\end{align} 
+%
+There are some subtleties that have not been covered here --- e.g.\ what is required for $X_t$ to admit a density function, and the regularity required for the expectation of an indicator function to make sense. We also note that when writing $p(s,y)$, the probability density function of $X$ being at a point $y$ at time $s$, we are implicitly referring to the probability density conditioned on the initial distribution, i.e. in this case conditioned on $X$ starting at position $x$ at time $t$, for some $t<s$.
+
+Finally, we note here that the probabilistic representations that can be written down for PDEs involving the operator $\mathcal{L}$ (which we recall is the generator of the SDE \autoref{eq:gen-sde}) are quite general in form. As we have seen, we have a Feynman-Kac formula for the solution to the PDE \autoref{eq:backward-pde}, as well as the corresponding boundary value problem \autoref{eq:general-bvp}. When it comes to PDEs involving the operator $\mathcal{L^{*}}$, the adjoint of $\mathcal{L}$, the PDE we can represent probabilistically is far less general. In fact, we cannot represent anything more general than \autoref{eq:kolmogorov-forward}.
+
+In the following section, we generalise the treatment of probabilistic representations of PDEs involving $\mathcal{L}$ even further, to the case of PDEs with nonlinear forcing (or source) terms.
+
+\subsection{Forward Backward SDE and nonlinear Feynman-Kac formulae} \label{sec:fbsde-theory}
+In this section, we introduce the concept on nonlinear Feynman-Kac formulae, which are formulated in terms of the solutions to Forward Backward Stochastic Differential Equations (FBSDEs). These nonlinear Feynman-Kac formulae allow us to write down probabilistic representations of a certain type of nonlinear second order PDEs, including PDEs of the type of the dual equation in \autoref{eq:nonlinear-pde-system}. 
+Now, we introduce the FBSDE
+%
+\begin{align} 
+    \label{eq:fbsde}
+    \begin{cases}
+    X_t &= x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s\\
+    & \\
+    Y_t &= f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s[\sigma(s,X_s)]^{-1}\big)ds - \int_t^T Z_s dW_s,
+    \end{cases}
+\end{align}
+%
+where the first equation is the forward SDE --- identical to \autoref{eq:gen-sde} --- and the second equation is the backward SDE.\@ We note that $X_t$ depends on the values of $X$ prior to time $t$, whilst $Y_t$ depends on the values of $X,Y,Z$ after time $t$ (and up to time $T$). 
+
+It can be shown that the backward SDE above is related to the PDE (terminal value problem)
+%
+\begin{align}
+    \label{eq:nonlinear-pde}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) + g(t,x,u(t,x),\nabla u(t,x)) = 0 \\
+    &u(T,x) = f(x), 
+\end{align} 
+%
+where, as before, the operator $\mathcal{L}$ is the infinitesimal generator of the forward SDE. Specifically, if the solution to the terminal value problem exists, then the processes $Y_t$, $Z_t$ given by
+%
+\begin{align} 
+    Y_t &= u(t,X_t)\\
+    Z_t &= \sigma(t,X_t) \nabla u(t,X_t)
+\end{align}
+%
+satisfy the FBSDE of \autoref{eq:fbsde}. We also note that this statement can be extended to a system of $k$ PDEs, and a vector valued stochastic process $Y_t$. 
+
+Similarly to in \autoref{eq:linear-fc}, we can express the solution $u(t,x)$ to the terminal value problem \autoref{eq:nonlinear-pde} in terms of a (now nonlinear) Feynman-Kac formula as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc}
+    u(t,x) = \mathbb{E}\bigg[ f(X_T^{t,x}) + \int_t^T g\big(s,X_s^{t,x},u(s,X_s^{t,x}),\nabla u(s,X_s^{t,x})\big)ds \bigg].
+\end{align} 
+%
+Alternatively, we can write $Y_t$ as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc-for-y}
+    Y_t = u(t,X_t) = \mathbb{E}\bigg[ f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s\big)ds \Big\lvert X_t \bigg].
+\end{align}
+%
+
+Comparing \autoref{eq:nonlinear-fc} to \autoref{eq:linear-fc}, we note that the function $g$ now in general depends on not only $t$ and $X_t$, but can also depend on $u$ and $\nabla u$. The discount (or attenuation) factor $k(t,x)$ in \autoref{eq:backward-pde} has been absorbed into the more general source term $g(t,x,u(t,x),\nabla u(t,x))$ in \autoref{eq:nonlinear-pde}. We also note that in \autoref{eq:linear-fc}, only the left hand side depends on $u$, whilst in \autoref{eq:nonlinear-fc} the right hand side also depends on $u$. Hence, to use the latter for numerical simulation of $u(t,x)$, more careful consideration is required.
+
+We have now seen that the solution to the terminal value problem of \autoref{eq:nonlinear-pde} is associated with the backward SDE in \autoref{eq:fbsde}. This is a generalisation of the probabilistic representation discussed in the previous subsection, and we note that by letting $g$ depend on only $t$ and $x$, we can formulate a less general backward SDE and recover a version of the linear Feymnan-Kac formula of \autoref{eq:linear-fc}, glossing over some subtleties related to the discount factor $k(t,x)$.
+
+For the conditions required for existence and uniqueness of the solution to the FBSDE \autoref{eq:fbsde}, as well as the conditions under which the probabilistic representation \autoref{eq:nonlinear-fc} exists and is well-defined, we refer to \cite{gobet2016monte}. We also omit the case of nonlinear Feynman-Kac formulae for boundary value problems.
+

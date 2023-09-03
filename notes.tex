@@ -1,0 +1,864 @@
+\section{Theory}
+
+% - PDE Constrained optimisation problem 
+
+% - Forward + Backward PDEs
+
+% - Initial/terminal conditions, boundary conditions, and source terms (figure out equivalent formulations?)
+
+% \vspace{5mm}
+% - Forward + Backward SDEs
+
+% - Connections between FBSDEs and the PDEs (eg distribution of process given by forward SDE is described by sol to Fokker-Planck/Kolmogorov forward eqn)
+
+% - Feynman-Kac formulae (of various kinds)
+
+% - Solving Fokker-Planck using MC + Feynman-Kac (as in reading course)
+
+% - Simplest scheme for Forward-Backward SDEs
+
+% - New (\cite{fang2023strong}) SSP scheme for FBSDEs
+
+% - Specifically what schemes and equations look like for the reading course model
+
+% - Similarities/Differences between the "first" (linear?) kind of Feynman-Kac formula, and the FBSDE *nonlinear* Feynman-Kac formulae?
+
+% - CONSISTENT NOTATION --- there is something weird with functions $f$ and $g$ at the moment, for example\dots
+
+\subsection{Forward and Backward PDEs}
+
+Treatment planning problem (PDE constrained optimisation):
+%
+\begin{align} 
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+\end{align}
+%
+subject to a constraint
+%
+\begin{align} 
+    &\partial_t u + b \cdot \nabla u - \mu \Delta u = g\\
+    &{u \rvert}_{\partial \Omega} = 0
+\end{align}
+%
+Using the method of Lagrange multipliers, we can solve the above optimisation problem by solving simultaneously the two PDEs
+%
+\begin{align}
+    - \partial_t z - \mu \Delta z - b \cdot \nabla z &= u - d_T\\
+    \partial_t u - \mu \Delta u + b \cdot \nabla u &= \frac{1}{\alpha} z 
+\end{align}
+%
+
+\subsection{Deriving coupled PDEs from the treatment planning problem}
+
+% - PDE constrained optimisation problem 
+
+% - Introduce our special case model
+
+% - But, what norm do we use? Introduce Bochner spaces (and this particular one also has an inner product, which is important)
+
+% - Write down the Lagrangian
+
+% - Functional derivatives = zero yields three equations, which become the two coupled PDEs
+
+% - Comment on how the problem would change if we changed the norm we're minimising in?
+
+We formulate the treatment planning problem as a constrained optimisation problem, where the constraint is a PDE describing the evolution of radiation in the domain. If we let $u$ denote the radiation intensity in the domain, and $d_T$ the target intensity, we seek the function $u$ that gives
+%
+\begin{align} 
+    \label{eq:to-minimise}
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+\end{align}
+%
+for some constant $\alpha$, and subject to the constraint
+%
+\begin{align}
+    \label{eq:pde-constraint}
+    &\partial_t u + \div{(\vecbf{b} u - \vecbf{A} \nabla u)} = g\\
+    &{u \rvert}_{\partial \Omega} = 0.
+\end{align}
+%
+The constraint describes the physical evolution of radiation in the domain. Here, we are specifically interested in describing radiation in terms of its evolution as a function of time $t$, spatial position $x$, and the velocity $v$ of the radiation particles. If we only consider one spatial dimension, our problem will have a total of two dimensions in addition to time, i.e. the domain $\Omega=\mathbb{R}\cross\mathbb{R}$ is two-dimensional, with one dimension being position and the other velocity. Thus, $u(t,x,v): \mathbb{R}^{+} \cross \Omega \rightarrow \mathbb{R}$.
+
+Specifically, we will consider a model where
+%
+\begin{equation}
+\vecbf{b} = 
+\begin{pmatrix}
+    &v\\
+    &-a(v)
+\end{pmatrix},
+\vecbf{A} = 
+\begin{pmatrix}
+    &0 &0\\
+    &0 &\frac{\sigma^2}{2}
+\end{pmatrix},
+\end{equation}
+%
+meaning that we only have a second derivative with respect to $v$, and not with respect to $x$.
+
+So far, we have formulated this optimisation problem without specifying which norm is used in \autoref{eq:to-minimise}. An intuitive choice may be the $L^2$ norm over the domain $\Omega$, but if we choose this norm we haven't taken into account the time dependence of $u$. With this in mind, we introduce the more general concept of a Bochner space $L^p(T;X)$ and the corresponding norm
+%
+\begin{align} 
+    {\lVert (\cdot) \rVert}^p_{L^p(T,X)} := \int_{T} {\lVert (\cdot)\rVert}^p_X dt, 
+\end{align}
+%
+where $X$ is a Banach space with corresponding norm ${\lVert \cdot\rVert}_X$. Specifically, we choose the case where $T$ is a time interval and $X=L^2(\Omega)$. A suitable choice for the norm to minimise \autoref{eq:to-minimise} in is then the following;
+%
+\begin{align} 
+    \lVert f \rVert_{L^2([0,T];L^2(\Omega))} &:= \int_{0}^{T}  {\lVert f \rVert}^2_{L^2(\Omega)} dt\\
+    &= \int_{0}^{T} \int_{\Omega} f^2 d\Omega dt.\\
+\end{align}
+%
+We note that the space $L^2([0,T];L^2(\Omega))$ additionally has an inner product, namely
+%
+\begin{align} 
+    \innerprod{f}{g}_{L^2(T;L^2(\Omega))} &:= \int_{0}^{T} \innerprod{f}{g}_{L^2(\Omega)} dt \\
+    & = \int_{0}^{T} \int_{\Omega} fg d\Omega dt.
+\end{align}
+%
+This inner product will be used in what follows.
+
+We now proceed to treat the minimisation problem, using the method of Lagrange multipliers. First, we formulate the Lagrangian function for the optimisation problem specified by \autoref{eq:to-minimise} and \autoref{eq:pde-constraint}. Then, we take generalised derivatives of the Lagrangian function and set these to zero. Finally, from the resulting equations we obtain a set of two coupled PDEs.
+
+The Lagrangian function is given by
+%
+\begin{align} 
+    \mathcal{L}(u,g,z) := \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2 - \innerprod{u}{\partial_t z} - \innerprod{u}{\vecbf{b} \cdot \nabla z} + \innerprod{\nabla u}{\vecbf{A} \nabla z} - \innerprod{g}{z},
+\end{align}
+%
+where we use $\lVert \cdot \rVert$ and $\innerprod{\cdot}{\cdot}$ to denote the norm and inner product in $L^2([0,T];L^2(\Omega))$, here and in what follows. The function $u$ is the function that we seek in the minimisation problem, $g$ is the source term from the constraining PDE, and $z$ is another function known as the Lagrange multiplier, which is introduced to capture the constraint.
+
+By taking generalised (functional) derivatives of $\mathcal{L}$ with respect to $u$,$z$, and $g$ we obtain the following;
+%
+\begin{align} 
+    D_u \mathcal{L}[\phi] &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \vecbf{b}\cdot\nabla z + \vecbf{A} \nabla z \cdot \nabla \phi \Big) d\Omega dt\\
+    &= \int_{0}^{T} \int_{\Omega} \Big((u-d_T)\phi - \partial_t z \phi - \phi \vecbf{b}\cdot\nabla z + \div{(\vecbf{A} \nabla z)} \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_z\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \phi \partial_t u + \div{(\vecbf{b}u)} \phi - \div{(\vecbf{A} \nabla u)} \phi - g \phi \Big) d\Omega dt,
+\end{align}
+%
+\begin{align} 
+    D_g\mathcal{L}[\phi] = \int_{0}^{T} \int_{\Omega} \Big( \alpha g \phi - z \phi \Big) d\Omega dt,
+\end{align}
+%
+where $\phi = \phi(t,x,v) \in C^{\infty}_{0}$ is any test function which is infinitely continously differentiable and zero on the boundary of the integration domain.
+
+By requiring $D_u \mathcal{L}[\phi]=D_z \mathcal{L}[\phi]=D_g \mathcal{L}[\phi]=0$ and applying the fundamental theorem of calculus of variations, we get a PDE for $z$;
+%
+\begin{align} 
+    - \partial_t z - \vecbf{b} \cdot \nabla z - \div{(\vecbf{A} \nabla z)} + (u - d_T) = 0,
+\end{align}
+% 
+a PDE for $u$;
+%
+\begin{align} 
+    \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} - g = 0,
+\end{align}
+%
+which we note recovers the constraint \autoref{eq:pde-constraint}, and finally a relationship between $z$ and $g$;
+%
+\begin{align}
+    \alpha g - z = 0. 
+\end{align}
+%
+Putting these three equations together, we obtain the coupled PDEs 
+%
+\begin{align} 
+    \label{eq:coupled-pdes}
+    \begin{cases} 
+        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= \frac{1}{\alpha} z\\
+        \partial_t z + \vecbf{b} \cdot \nabla z + \div{(\vecbf{A} \nabla z)} &= u - d_T,
+    \end{cases}
+\end{align}
+%
+where the source term of the equation for $u$ depends on $z$, and vice versa.
+
+The boundary condition ${u \rvert}_{\partial \Omega} = 0$ on $u$ is inherited by $z$. In terms of boundary contidions in $t$, we have an initial condition on $u$; $u(0,x,v)=f_0(x,v)$ for some function $f_0(x,v)$ and a terminal condition on $z$; $z(T,x,v)=u(T,x,v)$. As we shall see later, the initial condition on $u$ and terminal condition on $z$ make it natural to solve $u$ forward in time and $z$ backward in time when considering the coupled problem numerically.
+TODO: explain why!
+
+\subsection{Forward SDE and linear Feynman-Kac formula}
+
+Let $b:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^d$, $\sigma:\mathbb{R}^+ \times \mathbb{R}^d \rightarrow \mathbb{R}^{d \times d}$, and $W_t$ a $d$-dimensional Brownian motion. Consider the $d$-dimensional SDE
+%
+\begin{align}
+    \label{eq:gen-sde}
+X_t = x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s
+\end{align}
+%
+for the process $X_t$. 
+
+The infinitesimal generator of $X_t$ is the differential operator 
+%
+\begin{align}
+    \label{eq:generator-operator}
+    \mathcal{L} = \frac{1}{2} \sum_{i,j=1}^d [\sigma \sigma^T]_{i,j}(t,x) \partial_{x_i,x_j}^2 + \sum_{i=1}^d b_i(t,x) \partial_{x_i}.
+\end{align}
+%
+This operator is defined by
+%
+\begin{align} 
+    \mathcal{L}f(x) = \lim_{t\rightarrow 0} \frac{\mathbb{E}_x[f(X_t)]-f(x)}{t}.
+\end{align}
+%
+
+Below, we describe the connection between a PDE involving this differential operator, and the solution to the SDE \autoref{eq:gen-sde}, yielding a probabilistic representation of the solution to the PDE. We consider the terminal value problem
+%
+\begin{align}
+    \label{eq:backward-pde}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) - k(t,x)u(t,x) + g(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x).
+    \end{cases}
+\end{align}
+%
+We note that the probabilistic convention is to formulate this problem as a terminal value problem, as we have done here. However, the PDE convention would be to instead formulate it as an initial value problem. These two formulations are equivalent under a time-reversal $t \mapsto T-t$. 
+
+Under some conditions (see for example \cite{gobet2016monte} for the specifics) on the functions $f, g, k$ as well as on $b$ and $\sigma$, and provided that the solution $u$ to \autoref{eq:backward-pde} exists and is in $\mathcal{C}^{1,2}$, and satisfies some further conditions of continuity and boundedness, $u(t,x)$ is given by the Feynman-Kac formula
+%
+\begin{align}
+    \label{eq:linear-fc} 
+    u(t,x) = \mathbb{E}\bigg[ f\big( X_T^{t,x} \big) e^{-\int_t^T k(r,X_r^{t,x})dr} + \int_t^T g(s,X_s^{t,x}) e^{-\int_t^s k(r,X_r^{t,x})dr}ds\bigg].
+\end{align} 
+%
+Here $X_T^{t,x}$ denotes the stochastic process $X$ at time $T$, started at $x$ at time $t$.
+
+We note that in particular, for $k=0,g=0$, the solution to the Kolmogorov backward equation (with terminal condition),
+%
+\begin{align}
+    \label{eq:kolmogorov-backward}
+    \begin{cases}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) = 0, \quad t<T,x \in \mathbb{R}^d, \\
+    &u(T,x) = f(x),
+    \end{cases}
+\end{align}
+%
+is given by 
+%
+\begin{align}
+    u(t,x) = \mathbb{E}\big[ f(X_T^{t,x}) \big]. 
+\end{align} 
+% 
+Another PDE related to the SDE \autoref{eq:gen-sde} is the Kolmogorov forward equation
+%
+\begin{align} % sign?
+    \label{eq:kolmogorov-forward}
+    \partial_s p(s,y) - \mathcal{L}^{*}p(s,y) = 0,
+\end{align}
+%
+where the differential operator $\mathcal{L}^{*}$ is the adjoint of $\mathcal{L}$, given by
+%
+\begin{align}
+    \label{eq:adjoint-operator}
+     \mathcal{L}^{*} = \frac{1}{2} \sum_{i,j=1}^{d} \partial_{y_i,y_j} [\sigma \sigma^T]_{i,j}(s,y) - \sum_{i=1}^{d} \partial_{y_i}b_i(s,y).
+\end{align} 
+%
+% is the IC at time zero or time t? Probably zero...
+The Kolmogorov forward equation (with initial condition $p(0,y)=\delta(y-x)$) describes the probability distribution of the stochastic process $X_t$ that solves the SDE in \autoref{eq:gen-sde}. We can obtain a Feynman-Kac type formula for the density function $p(s,y)$ (assuming that $X_t$ admits a density), by noting that
+%
+\begin{align} 
+    \mathbb{E}[f(X_T^{t,x})] = \int p_{x,t}(T,z)f(z)dz 
+\end{align}
+%
+Hence,
+%
+\begin{align}
+    p(T,y) = \mathbb{E}[\delta({X_T^{t,x} - y})] = \int p_{t,x}(T,z)\delta({z-y})dz, 
+\end{align} 
+%
+or more generally
+%
+\begin{align}
+    p(s,y) = \mathbb{E}[\delta({X_s^{t,x} - y})] = \int p_{t,x}(s,z)\delta({z-y})dz.
+\end{align} 
+%
+There are some subtleties that have not been covered here --- e.g.\ what is required for $X_t$ to admit a density function, and the regularity required for the expectation of an indicator function to make sense. We also note that when writing $p(s,y)$, the probability density function of $X$ being at a point $y$ at time $s$, we are implicitly referring to the probability density conditioned on the initial distribution, i.e. in this case conditioned on $X$ starting at position $x$ at time $t$, for some $t<s$.
+
+\subsection{Forward Backward SDE and nonlinear Feynman-Kac formula}
+Now, we introduce the forward-backward SDE
+%
+\begin{align} 
+    \label{eq:fbsde}
+    \begin{cases}
+    X_t &= x + \int_0^t b(s,X_s) ds + \int_0^t \sigma(s,X_s)dW_s\\
+    & \\
+    Y_t &= f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s[\sigma(s,X_s)]^{-1}\big)ds - \int_t^T Z_s dW_s,
+    \end{cases}
+\end{align}
+%
+where the first equation is the forward SDE --- identical to \autoref{eq:gen-sde} --- and the second equation is the backward SDE.\@ We note that $X_t$ depends on the values of $X$ prior to time $t$, whilst $Y_t$ depends on the values of $X,Y,Z$ after time $t$ (and up to time $T$). 
+
+It can be shown that the backward SDE above is related to the PDE (terminal value problem)
+%
+\begin{align}
+    \label{eq:nonlinear-pde}
+    &\partial_t u(t,x) + \mathcal{L}u(t,x) + g(t,x,u(t,x),\nabla u(t,x)) = 0 \\
+    &u(T,x) = f(x), 
+\end{align} 
+%
+where, as before, the operator $\mathcal{L}$ is the infinitesimal generator of the forward SDE. Specifically, if the solution to the terminal value problem exists, then the processes $Y_t$, $Z_t$ given by
+%
+\begin{align} 
+    Y_t &= u(t,X_t)\\
+    Z_t &= \sigma(t,X_t) \nabla u(t,X_t)
+\end{align}
+%
+satisfy the FBSDE of \autoref{eq:fbsde}. We also note that this statement can be extended to a system of $k$ PDEs, and a vector valued stochastic process $Y_t$. 
+
+Similarly to in \autoref{eq:linear-fc}, we can express the solution $u(t,x)$ to the terminal value problem \autoref{eq:nonlinear-pde} in terms of a (now nonlinear) Feynman-Kac formula as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc}
+    u(t,x) = \mathbb{E}\bigg[ f(X_T^{t,x}) + \int_t^T g\big(s,X_s^{t,x},u(s,X_s^{t,x}),\nabla u(s,X_s^{t,x})\big)ds \bigg].
+\end{align} 
+%
+Alternatively, we can write $Y_t$ as
+%
+\begin{align} 
+    \label{eq:nonlinear-fc-for-y}
+    Y_t = u(t,X_t) = \mathbb{E}\bigg[ f(X_T) + \int_t^T g\big(s,X_s,Y_s,Z_s\big)ds \Big\lvert X_t \bigg].
+\end{align}
+%
+
+Comparing \autoref{eq:nonlinear-fc} to \autoref{eq:linear-fc}, we note that the function $g$ now in general depends on not only $t$ and $X_t$, but can also depend on $u$ and $\nabla u$. The discount (or attenuation) factor $k(t,x)$ in \autoref{eq:backward-pde} has been absorbed into the more general source term $g(t,x,u(t,x),\nabla u(t,x))$ in \autoref{eq:nonlinear-pde}. We also note that in \autoref{eq:linear-fc}, only the left hand side depends on $u$, whilst in \autoref{eq:nonlinear-fc} the right hand side also depends on $u$. Hence, to use the latter for numerical simulation of $u(t,x)$, more careful consideration is required.
+
+We have now seen that the solution to the terminal value problem (backward PDE) of \autoref{eq:nonlinear-pde} is associated with the backward SDE in \autoref{eq:fbsde}. This is a generalisation of the connection discussed in the previous subsection, and we note that by letting $g$ depend on only $t$ and $x$, we can formulate a less general backward SDE and recover a version of the linear Feymnan-Kac formula of \autoref{eq:linear-fc}, glossing over some subtleties related to the discount factor $k(t,x)$.
+
+As before, the PDE directly associated with the forward SDE in \autoref{eq:fbsde} is the Kolmogorov forward equation of \autoref{eq:kolmogorov-forward} with initial condition $p(0,y)=\delta(y-x)$. It is not clear whether a Feynman-Kac formula can be obtained for a more general PDE featuring the operator $\mathcal{L}^*$ defined in \autoref{eq:adjoint-operator} rather than the operator $\mathcal{L}$ of \autoref{eq:generator-operator}. 
+
+\subsection{FBSDEs and systems of PDEs}
+
+It is also possible to write down a more general version of \autoref{eq:fbsde}, where the process $Y_t$ which solves the backward SDE is allowed to be $K$-dimensional. This process can then be used to write down a probabilistic representation of the solution to a system of $K$ coupled PDEs (each with a terminal condition) of the type written down in \autoref{eq:nonlinear-pde}. For simplicity, here we consider the case where the source term $g$ does not depend on the gradient of $u$. Specifically, we then seek a probabilistic representation of $u = (u^{[1]},...,u^{[K]})$, where 
+%
+\begin{align} 
+    \label{eq:pde-system}
+\begin{cases}
+    &\partial_t u^{[k]}(t,x) + \mathcal{L}^{[k]} u^{[k]}(t,x) + g^{[k]}(t,x,u(t,x)) = 0\\
+    &u^{[k]}(T,x) = f^{[k]}(x)
+\end{cases}
+\end{align}
+%
+for $k=1,2,...,K$, and $g=(g^{[1]},...,g^{[K]})$, $f=(f^{[1]},...,f^{[K]})$. We note that in general each component of $g$ depends on the whole of $u$, and not just a particular component $u^{[k]}$.
+
+Here, as before, $\mathcal{L}^{[k]}$ denotes the generator of a diffusion process, such as that described in the forward SDE of \autoref{eq:fbsde}. If the operator $\mathcal{L}^{[k]}$ is the same for each $k$, it is enough to consider one diffusion process $X_t$. However, if $\mathcal{L}^{[k]}$ is different for each $k$, we need $K$ different diffusion processes $(X_t^{[1]},...,X_t^{[K]})$, with corresponding generators $(\mathcal{L}^{[1]},...,\mathcal{L}^{[K]})$. In general, each process $X_t^{[k]}$ is $d$-dimensional, i.e. of the same dimension as the variable $x$ in the PDE in \autoref{eq:pde-system}. 
+
+For simplicity, here we consider the case where the $X_t^{[k]}$ are one dimensional, and have constant coefficients, but the below argument is easily generalised to the $d$-dimensional case with nonconstant coefficients. We then have
+%
+\begin{align} 
+    X_t^{[k]} = x + \int_{0}^{t} b_k ds + \int_{0}^{t}\sigma_k dW_s^{[k]}
+\end{align}
+%
+each with corresponding generator
+%
+\begin{align} 
+    \mathcal{L}^{[k]} = \frac{1}{2} \sigma_k^2 \partial_x^2 + b_k \partial_x.
+\end{align}
+%
+
+We now claim that the processes $Y_t = (Y_t^{[1]},...,Y_t^{[K]})$ and $Z_t=(Z_t^{[1]},...,Z_t^{[K]})$ defined by 
+%
+\begin{align}
+    \label{eq:y-def}
+    Y_t^{[k]} &= u^{[k]}(t,X_t^{[k]})\\
+    Z_t^{[k]} &= \sigma_k \partial_x u^{[k]}(t,X_t^{[k]})
+\end{align}
+%
+obey the backward SDE
+%
+\begin{align} 
+    \label{eq:component-bsde}
+    Y_t^{[k]} = f^{[k]}(X_T^{[k]}) + \int_t^T g^{[k]}\big( s, X_s^{[k]},u(s,X_s) \big)ds - \int_t^T Z_s^{[k]}dW_s^{[k]},
+\end{align}
+%
+where $u(s,X_s) = \big( u^{[1]}(s,X_s^{[1]}),..., u^{[K]}(s,X_s^{[K]})\big)$.
+
+We show this holds by (componentwise) applying Itô's formula
+%
+\begin{align} 
+    v(s,X_s) = v(s_0,X_{s_0}) + \int_{s_0}^{s} [\partial_t + \mathcal{L}] v(r,X_r)dr + \int_{s_0}^{s} \partial_x v(r,X_r) \sigma(r,X_r)dW_r,
+\end{align}
+%
+where $\mathcal{L}$ is the generator of the diffusion process given by
+%
+\begin{align} 
+    X_s = X_{s_0} + \int_{s_0}^{s} b(r,X_r)ds + \int_{s_0}^{s}\sigma(r,X_r)dW_r,
+\end{align}
+%
+to the process $Y_t=(Y_t^{[1]},...,Y_t^{[K]})$ defined by \autoref{eq:y-def}, with $s_0=t$ and $s=T$. By noting that $u^{[k]}(T,X_T^{[k]})=f^{[k]}(X_T^{[k]})$ the result follows.
+
+To obtain a Feynman-Kac formula for $u(t,x)$ we take a conditional expectation of \autoref{eq:component-bsde}. What to condition on is slightly subtle. By considering that the equations for $u^{[k]}(t,x)$ for each $k$ must be equations of the same variable $x$, and are coupled through the function $g$, we can see that a sensible thing to condition on is $X_t^{[1]}=x,...,X_t^{[K]}=x$. In other words, we start each of the diffusions $X^{[k]}_s$ at the same point $x$ at time $t$.
+We then get the Feynman-Kac formula
+%
+\begin{align} 
+    u^{[k]}(t,x) = \mathbb{E}\bigg[ f^{[k]}(X_T^{[k],x,t}) + \int_{t}^{T} g^{[k]}\big( s, X_s^{[k],x,t}, u(s,X_s^{x,t}) \big)ds \bigg],
+\end{align}
+%
+where $X_T^{[k],x,t}$ denotes the process $X_s^{[k]}$ started at $x$ at time $t$, and $X_s^{x,t}$ denotes the ($k$-dimensional) $(X_s^{[1]},...,X_s^{[K]})$ started at $(x,...,x)$ at time $t$.
+
+Similarly to before, we can also write down a formula for $Y_t^{[k]}$ as 
+%
+\begin{align}
+Y_t^{[k]} = \mathbb{E}\bigg[ f^{[k]}(X_T^{[k]}) + \int_{t}^{T} g^{[k]}\big( s,X_s^{[k]},Y_s\big)ds \Big\lvert X_t^{[1]},...,X_t^{[K]}\bigg],
+\end{align}
+%
+by conditioning on the processes $(X_t^{[1]},...,X_t^{[K]})$, at time $t$, instead of on $(X_t^{[1]}=x,...,X_t^{[K]}=x)$.
+
+\subsection{Numerical schemes for FBSDEs}
+
+To solve the FBSDE \autoref{eq:fbsde} numerically, we need to discretise both the forward and the backward SDE in time. Discretising the forward SDE is straightforward, and can for example be done using the (forward) Euler-Maruyama scheme
+%
+\begin{align} 
+    \begin{cases}
+    &X_0^{h} = x\\
+    &X_{(i+1)h}^{(h)} = X_{ih}^{(h)} + b(ih,X_{ih}^{(h)}) h + \sigma(ih,X_{ih}^{(h)})(W_{(i+1)h}-W_{ih}).
+    \end{cases}
+\end{align}
+%
+We will use this discretised version of $X_t$ in the scheme for $Y_t=u(t,X_t)$, or similarly in the scheme for $u(t,x)$. For simplicity, we will here consider the case where $g$ is a function of $t,x,$ and $u$, but not of $\nabla u$.
+
+By using the tower property of expectation on \autoref{eq:nonlinear-fc-for-y}, we can express $Y_{t_i}$ in terms of $Y_{t_{i+1}}$, and in terms of $X_t$ between $t_i$ and $t_{i+1}$ as
+%
+\begin{align} 
+    Y_{t_i} = \mathbb{E}\bigg[ Y_{t_{i+1}} + \int_{t_{i}}^{t_{i+1}}g(s,X_s,Y_s)ds \Big\lvert X_{t_i} \bigg].
+\end{align}
+%
+We recall that we are solving for $Y_t$ backwards in time, so for $t_i < t_{i+1}$, $Y_{t_{i+1}}$ is known.
+
+From the above, we can get the Euler scheme (iterating backwards in time) for $Y$, namely
+%
+\begin{align} % not entirely sure we're conditioning on the right thing here? But seems consistent with the below...
+    \begin{cases}
+    &Y_T^{(h)} = f(X_T^{h})\\
+    &Y_{ih}^{(h)} = \mathbb{E}\bigg[ Y_{(i+1)h}^{(h)} + h g(t_i,X_{ih}^{(h)},Y_{(i+1)h}^{(h)}) \Big\lvert X_{t_i}^{(h)} \bigg].
+    \end{cases}
+\end{align}
+%
+
+By conditioning on the discretised process $X^{(h)}$ starting at a specific value $x$ at time $t_i$, we get the same scheme for $u(t,x)$:
+%
+\begin{align}
+    \begin{cases}
+    &u^{(h)}(T,x) = f(x)\\
+    &u^{(h)}(t_i,x) = \mathbb{E}\bigg[ u^{(h)}(t_{i+1},X^{(h),t_i,x}_{t_{i+1}}) + h g\big( t_i,x,u^{(h)}(t_{i+1},X^{(h),t_i,x}_{t_{i+1}}) \big) \bigg]. 
+    \end{cases}
+\end{align} 
+%
+
+We note here that the accuracy of a numerical simulation of $u(t,x)$ (or $Y_t$) depends on both the scheme we choose for $X_t$, and the scheme we choose for $Y_t$. In \cite{fang2023strong} a strong stability preserving multistep scheme, which improves the latter, is introduced. This scheme is given by
+%
+\begin{align} % Is this in fact right? look at X-term
+    Y_{ih}^{(h)} = \sum_{j=1}^{k} \alpha_j \mathbb{E}\bigg[ Y_{(i+j)h}^{(h)} \Big\lvert X_{t_i}^{(h)} \bigg] + h \sum_{j=1}^{k} \beta_j \mathbb{E}\bigg[ g\big(t_{i+j},X_{(i+j)h}^{(h)},Y_{(i+j)h}^{(h)}\big) \Big\lvert X_{t_i}^{(h)} \bigg].
+\end{align}
+%
+The corresponding scheme for $u(t,x)$ becomes
+%
+\begin{align} 
+    u^{(h)}(t_i,x) = \sum_{j=1}^{k} \alpha_j \mathbb{E}\bigg[ u^{(h)}\Big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x}\Big) \bigg] + h \sum_{j=1}^{k} \beta_j \mathbb{E}\bigg[ g\Big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x},u^{(h)}\big(t_{i+j},X_{t_{i+j}}^{(h),t_i,x}\big)\Big) \bigg].
+\end{align}
+%
+
+\subsection{Connecting the treatment planning problem and the FBSDE}
+
+Here, we seek to connect the coupled PDEs that arise from the treatment planning problem to the framework of FBSDEs.
+
+The PDE system arising from the treatment planning problem (with $u^{[1]}$ denoting the primal, and $u^{[2]}$ the dual) is given by
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \Delta u^{[1]} + b \cdot \nabla u^{[1]} &= \frac{1}{\alpha} u^{[2]} \\
+    - \partial_t u^{[2]} - \mu \Delta u^{[2]} - b \cdot \nabla u^{[2]} &= u^{[1]} - d_T.
+    \end{cases}
+\end{align}
+%
+We also have the boundary condition $u^{[1]}=u^{[2]}=0$ on the boundary. 
+%Here, could we say that the primal equation is solved forward in time, and the dual backward in time?
+%
+For simplicity, we consider only one spatial dimension
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \partial^2_x u^{[1]} + b \partial_x u^{[1]} &= \frac{1}{\alpha} u^{[2]} \\
+    - \partial_t u^{[2]} - \mu \partial_x^2 u^{[2]} - b \partial_x u^{[2]} &= u^{[1]} - d_T.
+    \end{cases}
+\end{align}
+%
+
+Rewriting this to be of the form of \autoref{eq:pde-system}:
+%
+\begin{align}
+    \begin{cases}
+    \partial_t u^{[1]} - \mu \partial^2_x u^{[1]} + b \partial_x u^{[1]} - \frac{1}{\alpha} u^{[2]} &= 0 \\
+    \partial_t u^{[2]} + \mu \partial_x^2 u^{[2]} + b \partial_x u^{[2]} - (u^{[1]} - d_T) &= 0.
+    \end{cases}
+\end{align}
+%
+This is equivalent to 
+%
+\begin{align} 
+    \begin{cases}
+    \partial_t u^{[1]} + \mathcal{L}^{[1]} u^{[1]} + g^{[1]} &= 0\\
+    \partial_t u^{[2]} + \mathcal{L}^{[2]} u^{[2]} + g^{[2]} &= 0
+    \end{cases}
+\end{align}
+%
+for 
+%
+\begin{align} 
+    % \begin{cases}
+    &\mathcal{L}^{[1]} = - \mu \partial_x^2 + b \partial_x\\
+    &\mathcal{L}^{[2]} = \mu \partial_x^2 + b \partial_x
+    % \end{cases}
+\end{align}
+%
+and 
+%
+\begin{align} 
+    % \begin{cases}
+    &g^{[1]} = -\frac{1}{\alpha} u^{[2]}\\
+    &g^{[2]} = -(u^{[1]}-d_T).
+    % \end{cases}
+\end{align}
+%
+Questions/uncertainties:
+\begin{itemize}
+    \item $\mathcal{L}^{[1]}$ cannot be the generator of a diffusion, as this would require $\frac{1}{2}\sigma^2 = -\mu$, i.e. a diffusion coefficient $\sigma = \sqrt{-2\mu}$, which would be imaginary
+    \item If we could time-reverse the forward equation (change the sign of the $\partial_t$-term) we'd maybe get the form we want (since the sign of the drift coefficient $b$ doesn't matter), but does this actually make sense to do?
+    \item In the PDEs resulting from the treatment planning problem, is the primal forward in time and the dual backward in time? If so, maybe it would make sense to time-reverse the primal equation, since the FBSDE framework works with multiple equations backward in time (with terminal conditions)?
+    \item If the above works out, what should the terminal condition(s)/initial condition(s) be? I.e. what are the functions $f^{[k]}(x)$?
+\end{itemize}
+
+\subsection{Numerical solution using a mixed approach}
+
+% - Overall idea of numerical methods
+
+% - Solving coupled PDEs iteratively: feeding soln of one into the other etc
+
+% - IC/TC and boundary conditions
+
+% - Specifics of the finite difference scheme 
+
+% - Specifics of the MC scheme 
+
+% - Interpolation of numerical solutions
+
+In this section, we describe an approach to numerically solve the coupled PDEs of \autoref{eq:coupled-pdes} using mixed numerical methods. Specifically, we will solve the primal equation using a finite difference scheme, and the dual equation using Monte Carlo methods. We recall that these equations are given by 
+%
+\begin{align} 
+    % \label{eq:coupled-pdes}
+    \begin{cases} 
+        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= \frac{1}{\alpha} z\\
+        \partial_t z + \vecbf{b} \cdot \nabla z + \div{(\vecbf{A} \nabla z)} &= u - d_T
+    \end{cases}
+\end{align}
+%
+with boundary conditions 
+%
+\begin{align}
+    \begin{cases} 
+        {u \rvert}_{\partial \Omega} &= 0\\
+        {z \rvert}_{\partial \Omega} &= 0\\
+        u(0,x,v) &= f_0(x,v)\\
+        z(T,x,v) &= 0,
+    \end{cases} 
+\end{align}
+%
+where the equation for $u$ is forward in time, and the equation for $z$ is backward in time. 
+
+Since the solution of the primal equation depends on the solution of the dual equation and vice versa, we will take an iterative approach, numerically solving the primal equation first, using that numerical solution as input into the numerical scheme for the dual equation, etc. The overall structure of the iterative procedure will be as follows:
+
+% \begin{enumerate}
+%     \item Initialize $u$ as $f_0(x,v)$ and solve the equation for $u$ with no source term, forward in time up to $t=T$.
+%     \item Initialize $z$ as $z(T,x,v)=u(T,x,v)$, using the $u$ calculated in step 1, and with the calculated $u$ as source term, and solve backward in time to $t=0$.
+%     \item Again initialize $u$ as $f_0(x,v)$ and solve forward in time to $t=T$, now using the $z$ calculated in step 2 as the source term.
+%     \item Repeat from step 2 until $\lVert u_{prev} - u_{curr}\rVert < tol$ for some tolerance, and in some suitable norm.
+% \end{enumerate}
+
+\begin{enumerate}
+    \item Consider the initial value problem
+    \begin{align} 
+        \begin{cases}
+        &\partial_t u^{(0)} + \div{(\vecbf{b}u^{(0)})} - \div{(\vecbf{A} \nabla u^{(0)})} = 0\\
+        &u^{(0)}(0,x,v) = f_0(x,v)
+        \end{cases}
+    \end{align}
+    and obtain its solution $u^{(0)}(t,x,v)$.
+    \item Then, using $u^{(0)}$ as defined above, consider the terminal value problem 
+    \begin{align} 
+        \begin{cases} 
+            &\partial_t z^{(0)} + \vecbf{b} \cdot \nabla z^{(0)} + \div{(\vecbf{A} \nabla z^{(0)})} = u^{(0)} - d_T\\
+            &z^{(0)}(T,x,v) = 0
+        \end{cases}
+    \end{align}
+    and obtain its solution $z^{(0)}(t,x,v)$.
+    \item For $k=1,\dots,k_{max}$:
+    \begin{enumerate}
+        \item Using $z^{(k-1)}$ as defined above, consider the initial value problem 
+        \begin{align}
+            \label{eq:primal-iteration} 
+            \begin{cases}
+                &\partial_t u^{(k)} + \div{(\vecbf{b}u^{(k)})} - \div{(\vecbf{A} \nabla u^{(k)})} = \frac{1}{\alpha} z^{(k-1)}\\
+                &u^{(k)}(0,x,v) = f_0(x,v)
+            \end{cases}
+        \end{align}
+        and obtain its solution $u^{(k)}(t,x,v)$.
+        \item Then, using $u^{(k)}$ as defined above, consider the terminal value problem 
+        \begin{align}
+            \label{eq:dual-iteration}
+            \begin{cases}
+                &\partial_t z^{(k)} + \vecbf{b} \cdot \nabla z^{(k)} + \div{(\vecbf{A} \nabla z^{(k)})} = u^{(k)} - d_T\\
+                &z^{(k)}(T,x,v) = 0
+            \end{cases} 
+        \end{align} 
+        and obtain its solution.
+    \end{enumerate}
+    \item Repeat (a) and (b) until $k=k_{max}$ or $\lVert u^{(k-1)} - u^{(k)} \rVert < tol$, for some tolerance, and in some suitable norm.
+\end{enumerate}
+
+When implementing this procedure numerically, we also need to numerically approxiamte the solutions of the specified initial and terminal value problems. As discussed, we will solve the $u^{(k)}$-equations using a finite difference scheme and the $z^{(k)}$-equations using a Monte Carlo approach. We now go on to describe in more detail how to implement these numerical methods, and cover the details of the numerical schemes we propose to use.
+
+To formulate the finite difference scheme for the forward equation, we need to discretise the derivatives that feature in the equation. Recalling the form of the coefficients $\vecbf{A}$ and $\vecbf{b}$, this means that we need to discretise first order derivatives with respect to time, positiion, and velocity, and a second order derivative with respect to velocity.
+
+We approcimate the $t$-derivative by a backward difference as
+%
+\begin{align} 
+    \partial_t u(t,x,v) \approx \frac{u(t,x,v) - u(t-\Delta t,x,v)}{\Delta t}
+\end{align}
+%
+and similarly the $x$-derivative as
+%
+\begin{align} 
+    \partial_x u(t,x,v) \approx \frac{u(t,x,v) - u(t,x-\Delta x,v)}{\Delta x}
+\end{align}
+%
+and the first order $v$-derivative as
+%
+\begin{align} 
+    \partial_v u(t,x,v) \approx \frac{u(t,x,v) - u(t,x,v-\Delta v)}{\Delta v}.
+\end{align}
+%
+Finally, we approximate the second order $v$-derivative by a central difference as
+%
+\begin{align} 
+    \partial^2_v u(t,x,v) &\approx \frac{\frac{u(t,x,v+\Delta v)-u(t,x,v)}{\Delta v}-\frac{u(t,x,v)-u(t,x,v-\Delta v)}{\Delta v}}{\Delta v}\\
+    &= \frac{u(t,x,v+\Delta v)- 2 u(t,x,v) + u(t,x,v-\Delta v)}{{(\Delta v)}^2}.
+\end{align}
+%
+Now, we uniformly partition the domain, and let $\Delta t = \frac{T}{N}$,$\Delta x = \frac{X}{M}$, $\Delta v = \frac{V}{M}$, where $T$ denotes the final time, and $X$ and $V$ denote the maximum position and velocity in the domain respectively. Here, we have also chosen to include the same number of points in the position and velocity directions, but a potentially different number of points in the time direction. By denoting  $t_n=n\Delta t$, $x_i=i\Delta x$,$v_j=j\Delta v$ and $u(t_n,x_i,v_j)$ by $u^n_{i,j}$, we can write down a finite difference scheme approximating $u$. Specifically, we write down a scheme that is explicit in the first derivatives but implicit in the second derivative. First writing down this scheme having only discretised in time we have
+%
+\begin{align} % or should this be z^{n-1}?
+    \frac{u^n-u^{n-1}}{\Delta t} + \div{(\vecbf{b}u^{n-1} - \vecbf{A} \nabla u^n)} = \frac{1}{\alpha} z^n,
+\end{align}
+%
+where $z^n$ is a discretised solution of the backward equation, which we will describe in more detail later on.
+
+The finite difference scheme for $u$ discretised in $t$,$x$, and $v$ is then given by 
+%
+\begin{align} 
+    \frac{1}{\alpha}z^n_{i,j} &= \frac{u^n_{i,j}-u^{n-1}_{i,j}}{\Delta t} + v_j \frac{u^{n-1}_{i,j}-u^{n-1}_{i-1,j}}{\Delta x} - u^{n-1}_{i,j}a'(v_j) - a(v_j)\frac{u^{n-1}_{i,j}-u^{n-1}_{i,j-1}}{\Delta v}\\
+     &- \frac{\sigma^2}{2}\frac{u^n_{i,j+1}-2u^n_{i,j}+u^n_{i,j-1}}{(\Delta v)^2}.
+\end{align}
+%
+Collecting terms in $u^n$ and $u^{n-1}$ we get
+%
+\begin{align} 
+    \label{eq:finite-difference}
+    u^n_{i,j} - \frac{\sigma^2\Delta t}{2(\Delta v)^2}(u^n_{i,j+1}-2u^n_{i,j}+u^n_{i,j-1}) &= u^{n-1}_{i,j} - \frac{\Delta t}{\Delta x}v_j(u^{n-1}_{i,j}-u^{n-1}_{i-1,j}) + \Delta t a'(v_j) u^{n-1}_{i,j}\\ 
+    &+ \frac{\Delta t}{\Delta v} a(v_j)(u^{n-1}_{i,j}-u^{n-1}_{i,j-1}) + \Delta t z^{n}_{i,j}.
+\end{align}
+%
+
+We can write this in matrix form by letting 
+%
+\begin{align} 
+    \vecbf{u}^n = 
+    \begin{pmatrix}
+        &u^n_{1,1}\\
+        & u^n_{1,2}\\
+        & \cdots \\
+        &u^n_{1,M}\\
+        &u^n_{2,1}\\
+        & \cdots \\ 
+        & \cdots \\ 
+        &u^n_{M,M-1}\\
+        &u^n_{M,M} 
+    \end{pmatrix}
+\end{align}
+%
+and similarly defining $\vecbf{u}^{n-1}$ and $\vecbf{z}^n$. The matrix form of \autoref{eq:finite-difference} then becomes 
+%
+\begin{align} 
+    \label{eq:fd-matrix}
+    \vecbf{B} \vecbf{u}^n = \vecbf{C} \vecbf{u}^{n-1} + \Delta t \vecbf{z}^n,
+\end{align}
+%
+where $\vecbf{B}$ and $\vecbf{C}$ are matrices of size $M^2 \cross M^2$, and $\vecbf{u}^n$, $\vecbf{u}^{n-1}$ and $\vecbf{z}^n$ are column vectors of length $M^2$. Enforcing zero boundary conditions, the nonzero entries of $\vecbf{B}$ are given by
+%
+\begin{align} 
+    \begin{cases} 
+        B_{k,k} &= 1 + \sigma^2 \frac{\Delta t}{(\Delta v)^2}\\
+        B_{k,k+1} &= - \frac{\sigma^2}{2} \frac{\Delta t}{(\Delta v)^2},\text{ unless } k \equiv 0 \mod M\\ 
+        B_{k,k-1} &= - \frac{\sigma^2}{2} \frac{\Delta t}{(\Delta v)^2},\text{ unless } k \equiv 1 \mod M
+    \end{cases}
+\end{align}
+%
+and the nonzero entries of $\vecbf{C}$ are given by 
+%
+\begin{align} 
+    \begin{cases}
+        C_{k,k} &= \beta_{k \mod M}\\
+        C_{k,k-1} &= - \delta_{k \mod M}\text{ unless } k \equiv 1 \mod M\\
+        C_{k,k-M} &= \gamma_{k \mod M}
+    \end{cases}
+\end{align}
+%
+where 
+%
+\begin{align} 
+    \begin{cases} 
+        \beta_j &= 1 - v_j \frac{\Delta t}{\Delta x} + a'(v_j)\Delta t + a(v_j)\frac{\Delta t}{\Delta v}\\
+        \gamma_j &= v_j \frac{\Delta t}{\Delta x} \\
+        \delta_j &= a(v_j)\frac{\Delta t}{\Delta v}
+    \end{cases}
+\end{align}
+%
+
+We note that the rows (and columns) of $\vecbf{B}$ and $\vecbf{C}$ are labelled in the same order as the rows of $\vecbf{u}^n$, namely $(1,1),(1,2),\dots,(1,M),(2,1),\dots(M,M)$. We map this labeling to the index $k$ running from $1$ to $M^2$ as 
+%
+\begin{align}
+    k(i,j) = (i-1)M + j.
+\end{align}
+%
+Hence, the conditions $k\equiv 0 \mod M$ and $k\equiv 1 \mod M$ correspond to rows labeled $(i,M)$ and $(i,1)$ respectively. We also note that for a fixed $j$ the coefficients $\beta_j$, $\gamma_j$, $\delta_j$ occur on rows labeled $(i,j)$ for $i=1,\dots,M$, and so on row $k$ of the matrix $C$, the coefficients labelled $j = k \mod M$ occur.
+
+By inverting the matrix $\vecbf{B}$ in \autoref{eq:fd-matrix} we get an explicit expression for $\vecbf{u}^n$ in terms of $\vecbf{u}^{n-1}$, namely
+%
+\begin{align} 
+    \label{eq:fd-matrix-ii}
+    \vecbf{u}^n = \vecbf{B}^{-1}\vecbf{C}\vecbf{u}^{n-1} + \Delta t \vecbf{B}^{-1}\vecbf{z}^n.
+\end{align}
+%
+This equation gives the procedure for stepping one step forward in time, so to get from $t=0$ to $T=0$, taking $n$ steps of size $\Delta t = \frac{T}{N}$ in time, we will need to apply the equation $N$ times. We also note that the scheme in \autoref*{eq:fd-matrix-ii} is only well-defined if $\vecbf{B}$ is invertible. Since $\vecbf{B}$ is tridiagonal, it is invertible if it is strictly diagonally dominant, i.e. if
+%
+\begin{align} 
+    \sum_{j\neq i} \lvert B_{i,j} \rvert < \lvert B_{i,i} \rvert,  
+\end{align}
+%
+which corresponds to the condition 
+%
+\begin{align}
+    \sigma^2 \frac{\Delta t}{(\Delta v)^2} < 1 + \sigma^2 \frac{\Delta t}{(\Delta v)^2}.
+\end{align}
+%
+
+Now, we go on to discuss the details of the scheme implemented to solve the dual equation for $z$. As previously outlined, we will employ a Feynman-Kac formula connecting the dual equation to a stochastic differential equation (SDE), and then use Monte-Carlo simulation to obtain an approximation of the solution $z$.
+
+Considering the dual equation in \autoref{eq:coupled-pdes}, we see that it can be written as
+%
+\begin{align} 
+    \label{eq:dual-eqn}
+    &\partial_t z + \mathcal{L} z + d_T - u = 0 \\
+    &z(T,x,v) = 0
+\end{align}
+%
+with the differential operator $\mathcal{L}$ being of the form
+%
+\begin{align} 
+    \mathcal{L}z &= \vecbf{b}\cdot \nabla z + \div{\vecbf{A}\nabla z} \\
+    &= v \partial_x z - a(v) \partial_v z + \frac{\sigma^2}{2}\partial^2_v z.
+\end{align}
+%
+This is the generator of the stochastic process given by the two-dimensional SDE
+%
+\begin{align} 
+    Y_t &= \begin{pmatrix}
+        x\\
+        v
+    \end{pmatrix} 
+    + \int_0^t \vecbf{b} ds + \int_0^t \sqrt{2}\vecbf{A}^{1/2} dW_s,\\
+\end{align}
+%
+where $\vecbf{A}^{1/2}$ denotes the matrix square-root of $\vecbf{A}$. We also note that $W_s$ is a two-dimensional Brownian motion. Making explicit the forms of $\vecbf{A}$ and $\mathbf{b}$ we can write the SDE as
+
+%
+\begin{align}
+    \label{eq:model-sde}
+    Y_t = 
+\begin{pmatrix}
+    X_t\\
+    V_t
+\end{pmatrix}
+= 
+\begin{pmatrix}
+    x\\
+    v
+\end{pmatrix}
++ \int_0^t 
+\begin{pmatrix}
+    V_s\\
+    -a(V_s)
+\end{pmatrix}
+ds 
++ \int_0^t
+\begin{pmatrix}
+    0 & 0\\
+    0 & \sigma 
+\end{pmatrix}
+\begin{pmatrix}
+    dW_s^{(1)}\\
+    dW_s^{(2)}
+\end{pmatrix}.
+\end{align}
+%
+Using the process $Y_t$, we can now write down a probabilistic representation of the solution to the dual equation \autoref{eq:dual-eqn} as
+%
+\begin{align}
+    z(t,x,v) = \mathbb{E} \bigg[\int_t^T d_T(s,X_s^{t,x},V_s^{t,x}) - u(s,X_s^{t,x},V_s^{t,x}) ds \bigg],
+\end{align}
+%
+where $X_s^{t,x}$ denotes the stochastic process $X_s$ at time $s$, started at the initial value $x$ at time $t<s$.
+
+To compute an approximation of $z$ using this probabilistic representation, we need to estimate the expectation $\mathbb{E}[(\cdot)]$. This is easily done by taking a Monte Carlo approach, where we estimate the expectation as the empirical mean over a number of sample paths $M$. Specifically,
+%
+\begin{align}
+    \label{eq:dual-mc-approx}
+    z(t,x,v) \approx \sum_{m=1}^{M} \int_t^T d_T(s,X_s^{(m),t,x},V_s^{(m),t,x}) - u(s,X_s^{(m),t,x},V_s^{(m),t,x}) ds . 
+\end{align}
+%
+This approximation converges at a rate proportional to $\frac{1}{\sqrt{M}}$, by the law of large numbers. 
+
+As we cannot (in general) write down a closed-form expression for the solution to the SDE \autoref{eq:model-sde}, we also need to formulate a discretised approximation of the solution, which we can use to simulate the sample paths needed for the approximation of the expectation. For example, the Euler-Maruyama scheme for \autoref{eq:model-sde} is given by
+%
+\begin{align}
+    X_{n+1} &= X_n + V_n \Delta t \\
+    V_{n+1} &= V_n - a(V_n)\Delta t + \sigma \Delta W_n \\
+    X_0 &= x, V_0 = v,
+\end{align}
+%
+where we define the constant time step $\Delta t = T/N$, and $W_n$ denotes the Brownian increment
+%
+\begin{align} 
+    W_n := W((n+1)\Delta t) - W(n\Delta t) \sim \mathcal{N}(0,\Delta t).
+\end{align}
+%
+
+Finally, when applying these discretisation schemes in an implementation of the iterative algorithm proposed above, we need to consider how to evaluate the source terms and initial/terminal conditions. When solving \autoref{eq:primal-iteration} to obtain $u^{(k)}$ we simply need to know the values of $z^{(k-1)}$ at grid points. By using the same grid for solving the primal and dual equations, and storing the solution $z^{(k-1)}$, we can be sure to already have all the neccessary values.
+
+On the other hand, when solving \autoref{eq:dual-iteration} using a Monte Carlo approach, we need to evaluate $u^{(k)}(t,x,v)$ at arbitrary points $(x,v)$, since we evaluate at the random points $(X_s^{(t,x)},V_s^{(t,v)})$. To evaluate $u^{(k)}$ between grid points in $x$ and $v$, we will simply linearly interpolate between the values at grid points.
+We note that it is enough to be able to evaluate $u^{(k)}$ at grid points (rather than arbitrary points) in $t$, since the time variable remains deterministic. By choosing the same time discretisation for the dual equation as for the primal, we can ensure that the required points in time align with the grid points of the stored solution $u^{(k)}$. 
+
+Finally, we also need to compute the integral with respect to time in \autoref{eq:dual-mc-approx}. For simplicity, we divide this into two integrals, both of which we compute using a midpoint Riemann sum. First,
+%
+\begin{align}
+    \int_{t_i}^{T} u^{(k)}\big(s,X_s^{t,x},V_s^{t,v}\big) ds = \sum_{j=i}^{N-1} \frac{\Delta t}{2} \bigg(u^{(k)}\big(t_j,X_{t_j}^{t_i,x},V_{t_j}^{t_i,x}\big) + u^{(k)}\big(t_{j+1},X_{t_{j+1}}^{t_i,x},V_{t_{j+1}}^{t_i,x}\big)\bigg),
+\end{align}
+% 
+where we note that it is only neccessary to compute the integral starting from a gridpoint $t_i$, since we have chosen the same time discretisation for the primal and dual equations. We also note that by making this choice, no additional error is introduced by replacing the integral by a Riemann sum. In fact, the sum is exactly equal to the integral defined by $u^{(k)}$ on grid points, and linearly interpolated between them. 
+
+Second we have
+%
+\begin{align}
+    \int_{t_i}^{T} d_T(s,X_s^{t,x},V_s^{t,v}) ds \approx \sum_{j=i}^{N-1} \frac{\Delta t}{2} \bigg( d_T\big(t_j,X_{t_j}^{t_i,x},V_{t_j}^{t_i,v}\big) + d_T\big(t_{j+1},X_{t_{j+1}}^{t_i,x},V_{t_{j+1}}^{t_i,v}\big) \bigg).
+\end{align}
+%
+In this case, the Riemann sum is an approximation of the integral, since the function $d_T(t,x,v)$ is the target dose, defined without interpolation.
