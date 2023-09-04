@@ -39,33 +39,33 @@
 
 \newpage
 
-\section{Notes/To Do}
-Things to write:
-\begin{itemize}
-    \item Background: introduce application to radiotherapy treatment planning and equations describing radiation transport. Introduce the simplified model (like reading course model) that we will focus on here. Maybe also full Boltzman equation?
-    \item Explain how the choice of norm for the minimisation problem can lead to nonlinear PDEs - this motivates use of the full FBSDE framework (because we get nonlinear source terms)
-    \item Explain why the full coupled system can't be fit into the FBSDE framework - the forward/primal equation is not of the form in the FBSDE system (even with constant coefficients, because of time reversal?)
-    \item Details of how $z$ gets its BCs and TC from those we have for $u$
-    \item Convergence of approximation (twofold x 2): Does the iterative scheme converge when soln's to the sequence of PDEs are exact? I.e. $u^{(k)} \rightarrow u^{(*)}$? And is $u^{(*)}$ the right thing? Furthermore, does the iterative scheme converge (and to the right thing) when the soln's to the sequence of PDEs are approximated numerical sol'ns?
-    \item Results of numerical experiments
-    \item Future extensions of this model/framework: Model for radiation in multiple spatial dimensions (now just 1D), better/more accurate discretisation schemes e.g. SSP, MLMC, higher order in general?
-    \item another future work thing: figure out how to parallelize the MC code?
-    \item Motivation for the SSP methods for FBSDE: iterating through numerically solving each PDE in sequence, we want to make sure error is not propagated / does not grow? (Also motivation for FBSDE framework is to deal with the nonlinearity that arises when a different norm is chosen for the optimisation problem)
-    \item Write about how BCs on the dual ($z$) are implemented in the Monte Carlo simulations + FC for boundary value problems (integration bound = stopping time, i.e. random!)
-\end{itemize}
+% \section{Notes/To Do}
+% Things to write:
+% \begin{itemize}
+%     \item Background: introduce application to radiotherapy treatment planning and equations describing radiation transport. Introduce the simplified model (like reading course model) that we will focus on here. Maybe also full Boltzman equation?
+%     \item Explain how the choice of norm for the minimisation problem can lead to nonlinear PDEs - this motivates use of the full FBSDE framework (because we get nonlinear source terms)
+%     \item Explain why the full coupled system can't be fit into the FBSDE framework - the forward/primal equation is not of the form in the FBSDE system (even with constant coefficients, because of time reversal?)
+%     \item Details of how $z$ gets its BCs and TC from those we have for $u$
+%     \item Convergence of approximation (twofold x 2): Does the iterative scheme converge when soln's to the sequence of PDEs are exact? I.e. $u^{(k)} \rightarrow u^{(*)}$? And is $u^{(*)}$ the right thing? Furthermore, does the iterative scheme converge (and to the right thing) when the soln's to the sequence of PDEs are approximated numerical sol'ns?
+%     \item Results of numerical experiments
+%     \item Future extensions of this model/framework: Model for radiation in multiple spatial dimensions (now just 1D), better/more accurate discretisation schemes e.g. SSP, MLMC, higher order in general?
+%     \item another future work thing: figure out how to parallelize the MC code?
+%     \item Motivation for the SSP methods for FBSDE: iterating through numerically solving each PDE in sequence, we want to make sure error is not propagated / does not grow? (Also motivation for FBSDE framework is to deal with the nonlinearity that arises when a different norm is chosen for the optimisation problem)
+%     \item Write about how BCs on the dual ($z$) are implemented in the Monte Carlo simulations + FC for boundary value problems (integration bound = stopping time, i.e. random!)
+% \end{itemize}
 
-NB: Need more references: 
+% NB: Need more references: 
 
-\begin{itemize}
-    \item Ref for the PDE constrained optimisation problem (and the iterative scheme for $(u^{(k)},z^{(k)})$) needed
-    \item Reuse refs from reading course report 
-    \item Some ref for physics-y bits? Or medical bits?
-    \item We have a few refs for Monte Carlo stuff e.g. Gobet, Oksendal, Klebaner
-    \item Also the SSP FBSDE paper (already in refs here)
-\end{itemize}
+% \begin{itemize}
+%     \item Ref for the PDE constrained optimisation problem (and the iterative scheme for $(u^{(k)},z^{(k)})$) needed
+%     \item Reuse refs from reading course report 
+%     \item Some ref for physics-y bits? Or medical bits?
+%     \item We have a few refs for Monte Carlo stuff e.g. Gobet, Oksendal, Klebaner
+%     \item Also the SSP FBSDE paper (already in refs here)
+% \end{itemize}
 
 \input{1_introduction.tex}
-\input{2_background.tex}
+% \input{2_background.tex}
 \input{3_theory.tex}
 \input{4_numerical_methods.tex}
 \input{5_results.tex}
@@ -102,7 +102,7 @@ NB: Need more references:
 % \bibliographystyle{plain}
 % \bibliography{bibliography.bib}
 \newpage
-\nocite{*}
+% \nocite{*}
 \printbibliography
 
 \end{document}

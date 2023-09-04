@@ -1,4 +1,14 @@
 \section{Summary and conclusion}
-\begin{itemize}
-    \item Summarize results and future work directions?
-\end{itemize}
+% \begin{itemize}
+%     \item Summarize results and future work directions?
+%     \item Radiation transport model (PDE vs SDE)
+%     \item PDE constrained optimisation
+%     \item Iterative procedure 
+%     \item Numerical methods 
+%     \item Initial numerical experiment 
+%     \item Summary of future work directions
+% \end{itemize}
+
+In this report, we have presented a mathematical framework for modelling proton beam therapy, and for mathematically solving the radiotherapy treament problem. First, we introduced a simple model for the behaviour of proton radiation, both in terms of a PDE describing the macroscopic scale, and an SDE describing the microscopic (individual proton) scale. Then, using the model for proton transport, we formulated the treatment planning problem as a PDE constrained optimisation problem, which resulted in a system of two coupled PDEs. We then introduced an iterative scheme for finding the solution to the coupled PDE system, and combined it with a finite difference scheme for the primal equation and a Monte Carlo simulation method for the dual equation to get a numerical method for finding the solution to the optimisation problem. We conducted some initial numerical experiments using a Gaussian target radiation intensity, and saw that the numerical method seems to converge.
+
+Finally, we presented a some directions for future work, including showing convergence of the iterative procedure, improving the numerical methods used to solve the primal and dual equations, and extending the proton transport model from one spatial dimension to three spatial dimensions.

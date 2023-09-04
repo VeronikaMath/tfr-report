@@ -1,17 +1,19 @@
 \section{Theory}\label{sec:theory}
-A lot of this is already written below.
-\begin{itemize}
-    \item Derivation of coupled PDE system from constrained optimisation problem 
-    \item Relevant Feynman-Kac formulae 
-    \item Extension to different norm for optimisation problem + relation of resulting eqns to nonlinear Feynman-Kac formulae
-    \item ((Why does $z$ work in MC framework but not $u$?))
-    \item Motivation for hybrid methods: it's not been done before, and not for this application. Idea: speed up treatment planning! 
-    \item FC formulae for boundary value problems
-    \item Add conditions for FC formulae to hold??
-\end{itemize}
+% A lot of this is already written below.
+% \begin{itemize}
+%     \item Derivation of coupled PDE system from constrained optimisation problem 
+%     \item Relevant Feynman-Kac formulae 
+%     \item Extension to different norm for optimisation problem + relation of resulting eqns to nonlinear Feynman-Kac formulae
+%     \item ((Why does $z$ work in MC framework but not $u$?))
+%     \item Motivation for hybrid methods: it's not been done before, and not for this application. Idea: speed up treatment planning! 
+%     \item FC formulae for boundary value problems
+%     \item Add conditions for FC formulae to hold??
+% \end{itemize}
+
+In this section, we introduce the mathematical theory of the project. First, we introduce a mathematical model for radiation transport, specifically relevant for modelling protons. Second, we formulate the problem of radiotherapy treatment planning as constrained optimisation problem, where the constraint is the PDE describing the dynamics of proton transport. Then, we introduce the theory of Feynman-Kac formulae, which can be used to obtain probabilistic representations of the solutions to certain kinds of PDEs and boundary value problems. Finally, we extend this theory to the solutions to nonlinear PDEs, through nonlinear Feynman-Kac formulae, which are formulated by using forward backward stochastic differential equations (FBSDEs).
 
 \subsection{Modelling radiation transport}
-In this section, we describe a simple model for the evolution of radiation in a domain. Specifically, we are interested in approximately describing the behaviour of protons. On a microscopic level, as individual protons travel through space in a material, they interact with the atoms in the medium in a few different ways. These interactions govern the continuing movement of the protons, e.g. how their direction and speed of movement changes, and if and when they come to a stop inside the medium. Specifically, proton interactions with matter can be dividied into three categories. First, nonelastic collisions with the nuclei of the atoms in the medium and second, elastic scattering off of the nuclei. Third, we have inelastic Coulomb interactions between the protons and the electrons of the atoms in the medium, due to the positive charge of the protons and negative charge of the electrons. In the simplified model considered here, we capture the elastic scattering and the Coulomb interaction, but assume that the nonelastic collisions between protons and atomic nuclei happen rarely enough that we can ignore them. 
+In this section, we describe a simple model for the evolution of radiation in a domain. Specifically, we are interested in approximately describing the behaviour of protons. On a microscopic level, as individual protons travel through space in a material, they interact with the atoms in the medium in a few different ways. These interactions govern the continuing movement of the protons, e.g. how their direction and speed of movement changes, and if and when they come to a stop inside the medium. Specifically, proton interactions with matter can be dividied into three categories \cite{newhauser2015physics}. First, nonelastic collisions with the nuclei of the atoms in the medium and second, elastic scattering off of the nuclei. Third, we have inelastic Coulomb interactions between the protons and the electrons of the atoms in the medium, due to the positive charge of the protons and negative charge of the electrons. In the simplified model considered here, we capture the elastic scattering and the Coulomb interaction, but assume that the nonelastic collisions between protons and atomic nuclei happen rarely enough that we can ignore them. This simplicication is justified physically since the nonelastic collisions occur only when a proton directly hits the nucleus of an atom in the medium, and the nucleus makes up only a small part of an atom \cite{newhauser2015physics}. Meanwhile, the elastic scattering and electron-proton Coulomb interaction occur when a proton passes close enough to the nucleus or electrons of an atom in the medium. 
 
 For simplicity we consider a one-dimensional domain in space. In this case, the radiation intensity $u(t,x,v)$ as a function of time $t$, position $x$, and velocity $v$ can be described by the PDE
 %

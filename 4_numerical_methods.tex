@@ -1,12 +1,12 @@
 \section{Numerical methods}
-A lot of this is also already written above.
-\begin{itemize}
-    \item Iterative scheme for solving sequence of PDEs (resulting in $(u^{(k)},z^{(k)})$) (This is needed here but not for some other types of problems - provide examples from PDE constrained optimisation theory?)
-    \item Finite difference scheme for $u^{(k)}$
-    \item Monte Carlo methods + Euler-Maruyama scheme + integral approximation for $z^{(k)}$
-    \item Linear interpolation of numerical solutions (piecewise trilinear Lagrange interpolation)
-    \item Motivation for mixed approach can go here! It's a novel approach which has not been done before, and could have benefits for numerical simulation - e.g. FD methods require inverting large matrices, whilst MC computations can be serialised? Also explain why only the dual equation fits into the MC framework.
-\end{itemize}
+% A lot of this is also already written above.
+% \begin{itemize}
+%     \item Iterative scheme for solving sequence of PDEs (resulting in $(u^{(k)},z^{(k)})$) (This is needed here but not for some other types of problems - provide examples from PDE constrained optimisation theory?)
+%     \item Finite difference scheme for $u^{(k)}$
+%     \item Monte Carlo methods + Euler-Maruyama scheme + integral approximation for $z^{(k)}$
+%     \item Linear interpolation of numerical solutions (piecewise trilinear Lagrange interpolation)
+%     \item Motivation for mixed approach can go here! It's a novel approach which has not been done before, and could have benefits for numerical simulation - e.g. FD methods require inverting large matrices, whilst MC computations can be serialised? Also explain why only the dual equation fits into the MC framework.
+% \end{itemize}
 
 In this section, we present a numerical approach for solving the optimisation problem presented in \autoref{sec:theory}, by solving the coupled PDE system we derived through a Lagrangian formulation of the optimisation problem. First, we present an iterative approach for obtaining the functions $u$ and $z$ which solve the coupled PDEs in \autoref{eq:coupled-pdes}. 
 
@@ -334,7 +334,7 @@ where we define the constant time step $\Delta t = T/N$, and $W_n$ denotes the B
 
 Finally, when applying these discretisation schemes in an implementation of the iterative algorithm proposed above, we need to consider how to evaluate the source terms and initial/terminal conditions. When solving \autoref{eq:primal-iteration} to obtain $u^{(k)}$ we simply need to know the values of $z^{(k-1)}$ at grid points. By using the same grid for solving the primal and dual equations, and storing the solution $z^{(k-1)}$, we can be sure to already have all the neccessary values.
 
-On the other hand, when solving \autoref{eq:dual-iteration} using a Monte Carlo approach, we need to evaluate $u^{(k)}(t,x,v)$ at arbitrary points $(x,v)$, since we evaluate at the random points $(X_s^{(t,x)},V_s^{(t,v)})$. To evaluate $u^{(k)}$ between grid points in $x$ and $v$, we will simply linearly interpolate between the values at grid points.
+On the other hand, when solving \autoref{eq:dual-iteration} using a Monte Carlo approach, we need to evaluate $u^{(k)}(t,x,v)$ at arbitrary points $(x,v)$, since we evaluate at the random points $(X_s^{(t,x)},V_s^{(t,v)})$. To evaluate $u^{(k)}$ between grid points in $x$ and $v$, we will simply linearly interpolate between the values at grid points, using piecewise trilinear Lagrange interpolation.
 We note that it is enough to be able to evaluate $u^{(k)}$ at grid points (rather than arbitrary points) in $t$, since the time variable remains deterministic. By choosing the same time discretisation for the dual equation as for the primal, we can ensure that the required points in time align with the grid points of the stored solution $u^{(k)}$. 
 
 Finally, we also need to compute the integral with respect to time in \autoref{eq:dual-mc-approx}. For simplicity, we divide this into two integrals, both of which we compute using a left Riemann sum. First,

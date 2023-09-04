@@ -1,5 +1,17 @@
 \section{Introduction}
-\begin{itemize}
-    \item Introduce context and motivation 
-    \item Describe structure of report
-\end{itemize}
+% \begin{itemize}
+%     \item Introduce context and motivation 
+%     \item Describe structure of report
+% \end{itemize}
+
+% \begin{itemize}
+%     \item Motivation: radiotherapy treatment 
+%     \item ((Different kinds of radiation (and how they interact with matter) ))
+%     \item Maybe some maths / intro explanantion of problem formulation and description of eqn for radiation behaviour?
+% \end{itemize}
+
+Proton beam therapy is a type of radiotherapy treatment for cancer, which uses a ray of proton radiation to damage the tumour. The radiation deposits energy in the tissue, which causes DNA damage, stopping the tumour cells from replicating. Since radiation will also damage the DNA in non-tumour cells, it is also important to as far as possible spare the healthy tissue surrounding the tumour. This becomes even more important if the tumour is located near a vital organ. 
+
+The amount of radiaton that the tumour and surrounding tissue are exposed to is measured in terms of energy deposited per unit length, or depth inside the tissue. This is also known as dose. The ways that protons interact with matter mean that they deposit very little energy when moving at high velocities, and deposit a lot of their energy when moving at lower velocities, resulting in further slowing down. As a result of this, the depth-dose profile for proton radiation has a sharp peak, where most of the energy is deposited \cite{newhauser2015physics}. By varying the starting velocities and directions of the incident proton beams, it is possible to produce a spread-out Bragg peak, which can cover the entirety of a tumour whilst delivering a significantly lower dose to the surrounding tissue, and a virtually zero dose at a larger depth than the far end of the spread-out peak. 
+
+In this report, we present a simple PDE model for radiation transport, which captures the key behaviour of proton radiation, and connect this model to an SDE model, which stochastically models the behaviour of individual protons. Using the PDE model, we formulate the problem of treatment planning mathematically as a PDE constrained optimisation problem. After treating the optimisation problem using the method of Lagrange multipliers, we introduce an iteartive scheme for solving the resulting coupled PDE system. Having introduced the theory of Feynman-Kac formulae yielding probabilistic representations of the solutions to certain PDEs, we then suggest a numerical approach which involves iteratively solving each of the coupled PDEs. We conduct some initial numerical experiments, implementing the iterative procedure in combination with a finite difference schem for one of the coupled PDEs, and a Monte Carlo simulation solution technique for the other. Finally, we outline a number of potential directions for future work.
