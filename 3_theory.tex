@@ -13,28 +13,48 @@
 In this section, we introduce the mathematical theory of the project. First, we introduce a mathematical model for radiation transport, specifically relevant for modelling protons. Second, we formulate the problem of radiotherapy treatment planning as constrained optimisation problem, where the constraint is the PDE describing the dynamics of proton transport. Then, we introduce the theory of Feynman-Kac formulae, which can be used to obtain probabilistic representations of the solutions to certain kinds of PDEs and boundary value problems. Finally, we extend this theory to the solutions to nonlinear PDEs, through nonlinear Feynman-Kac formulae, which are formulated by using forward backward stochastic differential equations (FBSDEs).
 
 \subsection{Modelling radiation transport}
-In this section, we describe a simple model for the evolution of radiation in a domain. Specifically, we are interested in approximately describing the behaviour of protons. On a microscopic level, as individual protons travel through space in a material, they interact with the atoms in the medium in a few different ways. These interactions govern the continuing movement of the protons, e.g. how their direction and speed of movement changes, and if and when they come to a stop inside the medium. Specifically, proton interactions with matter can be dividied into three categories \cite{newhauser2015physics}. First, nonelastic collisions with the nuclei of the atoms in the medium and second, elastic scattering off of the nuclei. Third, we have inelastic Coulomb interactions between the protons and the electrons of the atoms in the medium, due to the positive charge of the protons and negative charge of the electrons. In the simplified model considered here, we capture the elastic scattering and the Coulomb interaction, but assume that the nonelastic collisions between protons and atomic nuclei happen rarely enough that we can ignore them. This simplicication is justified physically since the nonelastic collisions occur only when a proton directly hits the nucleus of an atom in the medium, and the nucleus makes up only a small part of an atom \cite{newhauser2015physics}. Meanwhile, the elastic scattering and electron-proton Coulomb interaction occur when a proton passes close enough to the nucleus or electrons of an atom in the medium. 
+In this section, we describe a simple model for the evolution of radiation in a domain. Specifically, we are interested in approximately describing the behaviour of protons. On a microscopic level, as individual protons travel through space in a material, they interact with the atoms in the medium in a few different ways. These interactions govern the continuing movement of the protons, e.g. how their direction and speed of movement changes, and if and when they come to a stop inside the medium. Specifically, proton interactions with matter can be dividied into three categories \cite{newhauser2015physics}. First, nonelastic collisions with the nuclei of the atoms in the medium and second, elastic scattering off of the nuclei, as a positively charged proton moves near the positively charged nucleus of an atom and is repulsed, causeing its movement to change direction. Third, we have inelastic Coulomb interactions between the protons and the electrons of the atoms in the medium, due to the positive charge of the protons and negative charge of the electrons. In the simplified model considered here, we capture the elastic scattering and the Coulomb interaction, but assume that the nonelastic collisions between protons and atomic nuclei happen rarely enough that we can ignore them. This simplicication is justified physically since the nonelastic collisions occur only when a proton directly hits the nucleus of an atom in the medium, and the nucleus makes up only a small part of an atom \cite{newhauser2015physics}. Meanwhile, the elastic scattering and electron-proton Coulomb interaction occur when a proton passes close enough to the nucleus or electrons of an atom in the medium. 
 
-For simplicity we consider a one-dimensional domain in space. In this case, the radiation intensity $u(t,x,v)$ as a function of time $t$, position $x$, and velocity $v$ can be described by the PDE
+For simplicity we consider a one-dimensional domain in space, and start by considering the movement of an invividual proton, which can be described using a stochastic process. Specifically we describe proton movement as an Itô processs, which is the solution to an (Itô) stochastic differential equation. Considering a proton which starts moving at time $t_0$ from a position $x_0$ with a velocity $v_0$, we can say that its position at a later time $t$ will be given by the following differential equation (written in integral form);
+%
+\begin{align} 
+    \label{eq:x-sde}
+    X_t &= x_0 + \int_{t_0}^{t} V_s ds,
+\end{align}
+%
+where $X_t$ is the process describing the position of the proton as a function of time $t>t_0$, and $V_t$ is a process describing the velocity, also as a function of time. To have a complete model we also need to write down an equation for $V_t$, which should include terms for the proton interactions with matter. The elastic scattering, which causes the protons to change direction of movement, will cause a beam of protons initially moving in the same direction to spread out across the domain. This behaviour can be captured by a diffusive term in the equation for $V_t$. Assuming that the scattering does not depend on where in the medium a particle is, or the velocity it is travelling at, it suffices to include additive noise. On the other hand, the Coulomb interactions between protons and atomic electrons, causes the protons to slow down as they are attracted by the electrons. Protons don't slow down at a constant rate moving through the medium, but rather slow down more if they're moving at a lower velocity. This behaviour can be captured by a drift term in the equation for $V_t$, and this term should be negative, and dependent on $V_t$. Putting this together, we can describe the behvaiour of $V_t$ using the stochastic differential equation 
+%
+\begin{align} 
+    \label{eq:v-sde}
+    V_t &= v_0 - \int_{t_0}^{t} a(V_s) ds + \int_{t_0}^{t} \sigma dW_s,
+\end{align}
+% 
+where $a(v)$ is a decreasing function of $v$, $\sigma$ is a constant, and $W_t$ is a standard Brownian motion. In general, this reasoning works for a model in $3D$ space, but in this report we will only consider $1D$ space for simplicity.
+
+In terms of what exact form the function $a(v)$ should take, other than being a decreasing function of $v$, depends on our choice of model for the slowing down of the protons or, equivalently, for the energy loss rate. In \cite{newhauser2015physics}, a couple different models for this are presented. One of the simplest models is the Bragg-Kleeman model, originally presented in \cite{bragg_kleeman1905} for alpha particles, gives the energy loss rate, or stopping power $S$, as
+%
+\begin{align} 
+    \frac{S}{\rho} = -\frac{1}{\rho} \frac{dE}{dx} \approx - \frac{E^{1-p}}{\rho \alpha p},
+\end{align}
+% 
+where we have normalised by the density of the medium, $\rho$. Here, $\alpha$ is a parameter which depends on the properties of the medium, and $p$ is a parameter which captures how the energy loss rate depends on the proton's current energy or velocity.
+
+Since the purpose of this report is to conduct some initial numerical experiments using a sample setup, for the purposes of this report we have simply chosen $a(v) = e^{-cv}$, for some constant $c$. However, for physical accuracy, in future work we aim to consider different possible models for the energy loss rate, which are supported by existing experimental observations. 
+
+Another mathematical description of radiation transport can be formulated in terms of a partial differential equation (PDE) describing the evolution of the radiation intensity, or proton flux, as a function of $t$, $x$, and $v$. Specifically, the PDE model corresponding to the dynamics as those described by the SDEs \autoref{eq:x-sde} and \autoref{eq:v-sde} is given by 
 %
 \begin{align}
     \label{eq:pde-model}
-    \partial_t u + v \partial_x u - \frac{\sigma^2}{2} \partial_v^2 - \partial_v \big( a(v) u\big) = g(t,x,v),
+    &\partial_t u + v \partial_x u - \frac{\sigma^2}{2} \partial_v^2 u - \partial_v \big( a(v) u\big) = g(t,x,v)\\
+    &u(0,x,v)=f_0(x,v),
 \end{align}
 %
-where the $\partial_x$ term describes transport through space, the $\partial_v$ term describes energy depletion, and the $\partial_v^2$ term describes the elastic scattering. The function $g$ is a source term, describing the input of additional radiation into the domain. 
+where $g$ is a radiation source, and $f_0(x,v)$ is the initial condition, corresponding to the initial configuration of protons in the domain. Similarly to in the SDE model, we have terms representing transport, as well as the elastic scattering and Coulomb interactions. Specifically, the $\partial_x$ term describes transport through space, the $\partial_v$ term describes energy depletion, and the $\partial_v^2$ term describes the elastic scattering.
 
-Protons moving through a medium do not slow down linearly. Instead, they deposit very little energy when moving at high velocities, and much more when moving at low velocities, meaning that their velocities change more rapidly once they start slowing down. By choosing the function $a(v)$ to be a rapidly decreasing function of $v$, we are able to capture this behaviour in our model. For example, we might choose $a(v) = e^{-cv}$ for some constant $c$.
+In the case when $g=0$, the solution to \autoref{eq:pde-model} is the probability density function of $(X_t,V_t)$, started from a random initial condition $(X_0,V_0)$, which follows the distribution $f_0(x,v)$. In other words, we could think of \autoref{eq:pde-model} as describing the overall (macroscopic) behaviour of radiation through space, whilst \autoref{eq:x-sde} and \autoref{eq:v-sde} describe the (microscopic) behaviour of individual particles. In later subsections, we will discuss this type of connections between PDEs and SDEs, through so-called Feynman-Kac formulae, in more detail.
 
-Another description of radiation transport can be formulated in terms of SDEs describing the evolution of the position $X_t$ and velocity $V_t$ of an individual proton, where $X_t$ and $V_t$ are Itô processes obeying the equations
-%
-\begin{align} 
-    \label{eq:sde-model}
-    X_t &= x_0 + \int_{0}^{t} V_s ds\\ 
-    V_t &= v_0 - \int_{0}^{t} a(V_s) ds + \int_{0}^{t} \sigma dW_s.
-\end{align}
-%
-In fact, in the case when $g=0$, the solution to \autoref{eq:pde-model} is the probability density function of $(X_t,V_t)$. In other words, we could think of \autoref{eq:pde-model} as describing the overall (macroscopic) behaviour of radiation through space, whilst \autoref{eq:sde-model} describes the (microscopic) behaviour of individual particles. In later subsections, we will discuss this type of connections between PDEs and SDEs, through so-called Feynman-Kac formulae, in more detail.
+Finally, we note that, whilst we have formulated the dynamics in terms of position and velocity here, it is also possible to formulate the dynemics in terms of position, energy, and movement direction, where the energy is related through the magnitude of the velocity as $E = \frac{m\lvert v \rvert^2}{2}$.
+
 
 \subsection{Treatment planning as a PDE constrained optimisation problem}
 
@@ -71,10 +91,10 @@ As before, we let $u$ denote the radiation intensity in the domain. Letting $d_T
 %
 \begin{align} 
     \label{eq:to-minimise}
-    \min \frac{1}{2} {\lVert u - d_T \rVert}^2 + \frac{\alpha}{2} {\lVert g \rVert}^2
+    \min \frac{1}{2} {\lVert u - d_T \rVert}^2_{X} + \frac{\alpha}{2} {\lVert g \rVert}^2_{X}
 \end{align}
 %
-for some constant $\alpha$, and subject to the constraint
+in some norm $X$, for some constant $\alpha$, and subject to the constraint
 %
 \begin{align}
     \label{eq:pde-constraint}
@@ -183,10 +203,11 @@ The boundary condition ${u \rvert}_{\partial \Omega} = 0$ on $u$ is inherited by
 
 In terms of boundary contidions in $t$, we have an initial condition on $u$; $u(0,x,v)=f_0(x,v)$ for some function $f_0(x,v)$ and a terminal condition on $z$; $z(T,x,v)=0$. The initial condition on $u$ and terminal condition on $z$ make it natural to solve $u$ forward in time and $z$ backward in time when considering the coupled problem numerically. We can see that imposing a zero terminal condition on $z$ makes sense by considering \autoref{eq:coupled-pdes}, and the case where $u=d_T$. In this case, if $z(T,x,v)=0$, the solution to the dual equation is given by $z(t,x,v)=0$, and $u$ solves the primal equation with a zero source term. 
 
-We note that choosing a different norm for the optimisation problem would affect the form of \autoref{eq:coupled-pdes}. For example, we could choose to minimise the difference between $u$ and $d_T$ in the $L^p([0,T],L^p(\Omega))$-norm for some integer $p\neq 2$ instead. Specifically, we might then seek the $u$ and $g$ which minimise the expression 
+We note that choosing a different norm for the optimisation problem would affect the form of \autoref{eq:coupled-pdes}. For example, we could choose to minimise the difference between $u$ and $d_T$ in the $L^p([0,T],L^p(\Omega))$-norm for some integer $p\neq 2$ instead. We might also choose different values of $p$ for the first and second term of Specifically, we might then seek the $u$ and $g$ which minimise the expression 
 %
 \begin{align} 
-    \frac{1}{p} {\lVert u - d_T \rVert}^p_{L^p([0,T],L^p(\Omega))} + \frac{\alpha}{p} {\lVert g \rVert}^p_{L^p([0,T],L^p(\Omega))}.
+    \label{eq:gen-norm-to-minimise}
+    \frac{1}{p} {\lVert u - d_T \rVert}^p_{L^p([0,T],L^p(\Omega))} + \frac{\alpha}{q} {\lVert g \rVert}^q_{L^q([0,T],L^q(\Omega))}.
 \end{align}
 %
 In this case, we would get the coupled PDEs 
@@ -194,14 +215,15 @@ In this case, we would get the coupled PDEs
 \begin{align} 
     \label{eq:nonlinear-pde-system}
     \begin{cases} 
-        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= {\Big(\frac{z}{\alpha} \Big)}^{\frac{1}{p-1}} \\
+        \partial_t u + \div{(\vecbf{b}u)} - \div{(\vecbf{A} \nabla u)} &= {\Big(\frac{z}{\alpha} \Big)}^{\frac{1}{q-1}} \\
         \partial_t z + \vecbf{b} \cdot \nabla z + \div{(\vecbf{A} \nabla z)} &= {\big(u - d_T\big)}^{p-1},
     \end{cases}
 \end{align}
 %
 where we note that both the primal and dual equation now have nonlinear source terms. 
 
-In this report, we focus on the optimisation problem in the $L^2([0,T],L^2(\Omega))$-norm, where the resulting coupled PDEs are linear. However, we present this extension here, and cover some numerical methods for this general case in later sections, as a potential avenue for future work.
+In this report, we focus on the optimisation problem in the $L^2([0,T],L^2(\Omega))$-norm, where the resulting coupled PDEs are linear. However, we present this extension here, and cover some numerical methods for this general case in later sections, as a potential avenue for future work. As the choice of norm for $u-d_T$ determines in which sense we want the radiation intensity to be close to the target, and the norm chosen for the penalty term involving $g$ determines in what sense we want to penalise too large a function $g$, it might make sense to choose different norms for the two terms in \autoref{eq:to-minimise}. Some PDE constrained optimisation problems formulated in different norms are discussed in e.g. \cite{troltzsch2010optimal} and \cite{barker2016fast}, with the latter presenting a problem where the penalty (regularisation) term is formulated in the $H^1$ norm.
+
 
 \subsection{Forward SDE and linear Feynman-Kac formula}
 
@@ -245,7 +267,7 @@ We note that the probabilistic convention is to formulate this problem as a term
 Under some conditions on the functions $f, g, k$ as well as on $b$ and $\sigma$, and provided that the solution $u$ to \autoref{eq:backward-pde} exists and is sufficiently regular, we can represent $u(t,x)$ through a so-called Feynman-Kac formula. Specifically, the following conditions are sufficient:
 
 \begin{enumerate}
-    \item $b(t,x)$ and $\sigma(t,x)$ are continous functions satisfying the following conditions for some constant $C$: \begin{enumerate}
+    \item $b(t,x)$ and $\sigma(t,x)$ are Lipschitz continuous in $x$, and continuous in $t$, i.e. for some constant $C$: \begin{enumerate}
         \item $\lvert b(t,x) - b(t,y) \rvert + \lvert \sigma(t,x) - \sigma(t,y) \rvert \leq C \lvert x - y \rvert \quad \forall (t,x,y) \in [0,T]\cross \mathbb{R}^d \cross \mathbb{R}^d$
         \item $ \sup_{0\leq t \leq T} \lvert b(t,0) \rvert + \lvert \sigma(t,0) \rvert \leq C$
     \end{enumerate}
@@ -259,7 +281,7 @@ Under some conditions on the functions $f, g, k$ as well as on $b$ and $\sigma$,
         \sup_{0\leq t \leq T, x \in \mathbb{R}^d} \frac{\lvert u(t,x) \rvert}{1 + {\lvert x \rvert}^2} < + \infty.
     \end{align}
 \end{enumerate}
-In summary, condition 1 arrures the existence and uniqueness of the solution to the SDE \autoref{eq:gen-sde}, whilst conditions 2 and 4 are conditions on the growth of $f,g,k$ and $u$ respectively. Condition 3 dictates that the solution $u$ to the terminal value problem must exist and be sufficiently regular.
+In summary, condition 1 assures the existence and uniqueness of the solution to the SDE \autoref{eq:gen-sde}, whilst conditions 2 and 4 are conditions on the growth of $f,g,k$ and $u$ respectively. It is not strictly neccessary to specify a quadratic growth condition specifically -- in fact, it is possible to show similar results using any $p>0$ (see\cite{gobet2016monte}), but a growth condition of some sort is required, and is used in the proof of the formula below, to motivate that the expectation of a specific Itô integral with rescept to Brownian motion is zero. Condition 3 dictates that the solution $u$ to the terminal value problem must exist and be sufficiently regular. 
 
 Provided that these conditions are fulfilled, $u(t,x)$ is given by the Feynman-Kac formula
 %
